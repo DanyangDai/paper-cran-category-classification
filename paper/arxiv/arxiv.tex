@@ -1,0 +1,85 @@
+\documentclass{article}
+
+\usepackage{arxiv}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{lmodern}        % https://github.com/rstudio/rticles/issues/343
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{lipsum}
+\usepackage{graphicx}
+
+\title{TBA}
+
+\author{
+    Emi Tanaka
+    \thanks{emitanaka.org}
+   \\
+    Department of Econometrics and Business Statistics \\
+    Monash University \\
+  Clayton, VIC 3800 \\
+  \texttt{\href{mailto:emi.tanaka@monash.edu}{\nolinkurl{emi.tanaka@monash.edu}}} \\
+  }
+
+
+% Pandoc citation processing
+
+
+
+\begin{document}
+\maketitle
+
+\def\tightlist{}
+
+
+\begin{abstract}
+Abstract
+\end{abstract}
+
+
+\hypertarget{summary}{%
+\subsection{Summary}\label{summary}}
+
+This file is only a basic article template. For full details of
+\emph{The R Journal} style and information on how to prepare your
+article for submission, see the
+\href{https://journal.r-project.org/share/author-guide.pdf}{Instructions
+for Authors}.
+
+\hypertarget{about-this-format-and-the-r-journal-requirements}{%
+\subsubsection{About this format and the R Journal
+requirements}\label{about-this-format-and-the-r-journal-requirements}}
+
+\texttt{rticles::rjournal\_article} will help you build the correct
+files requirements:
+
+\begin{itemize}
+\tightlist
+\item
+  A R file will be generated automatically using \texttt{knitr::purl} -
+  see \url{https://bookdown.org/yihui/rmarkdown-cookbook/purl.html} for
+  more information.
+\item
+  A tex file will be generated from this Rmd file and correctly included
+  in \texttt{RJwapper.tex} as expected to build \texttt{RJwrapper.pdf}.
+\item
+  All figure files will be kept in the default rmarkdown
+  \texttt{*\_files} folder. This happens because
+  \texttt{keep\_tex\ =\ TRUE} by default in
+  \texttt{rticles::rjournal\_article}
+\item
+  Only the bib filename is to modifed. An example bib file is included
+  in the template (\texttt{RJreferences.bib}) and you will have to name
+  your bib file as the tex, R, and pdf files.
+\end{itemize}
+
+\bibliographystyle{unsrt}
+\bibliography{../paper.bib}
+
+
+\end{document}
