@@ -1,0 +1,25 @@
+---
+title: Extracting package information 
+output: html_document
+---
+
+
+```{r all_pkgs}
+url <- "http://cran.rstudio.com/web/packages/packages.rds"
+db <- readRDS(url(url)) %>% 
+  as.data.frame()%>% 
+  mutate(Description = str_replace_all(Description, "\n", " "),
+         Description = str_squish(Description),
+         Title = str_replace_all(Title, "\n", " "))
+```
+
+To get the list of packages for a particular CRAN task view:
+
+```{r ctv}
+doe_pkgs <- ctv:::.get_pkgs_from_ctv_or_repos("ExperimentalDesign", 
+                                              repos = "http://cran.rstudio.com/")[[1]]
+survey_pkgs <- ctv:::.get_pkgs_from_ctv_or_repos("OfficialStatistics", 
+                                              repos = "http://cran.rstudio.com/")[[1]]
+
+```
+
