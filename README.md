@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# Manuscript for *“TBA”*
+# Manuscript for *“R package downloads: what does it mean?”*
 
 <!-- badges: start -->
 <!-- badges: end -->
@@ -17,7 +17,7 @@ If you would like a preview of the work as you work, open
 and you can see the preview in the Viewer pane.
 
 If you would like to see how it looks like as a PDF, there are two
-version provided: arxiv and rjournal. Knit the file
+version provided: `arxiv` and `rjournal`. Knit the file
 `paper/arxiv/arxiv.Rmd` to get the PDF and tex file ready for submission
 to arxiv. Knit the file `paper/rjournal/paper-rjournal.Rmd` to get the
 PDF ready for submission to R Journal.
