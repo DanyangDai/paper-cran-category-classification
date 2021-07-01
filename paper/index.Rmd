@@ -47,9 +47,31 @@ theme_set(
         plot.title = element_text(color = "black", hjust = 0)))
 ```
 
+
+```{r load_packages}
+library(lubridate)
+library(rvest)
+library(glue)
+library(dplyr)
+```
+
+
+```{r dataset, cache=TRUE}
+url <- "http://cran.rstudio.com/web/packages/packages.rds"
+db <- readRDS(url(url)) %>% 
+  as.data.frame()%>% 
+  mutate(Description = str_replace_all(Description, "\n", " "),
+         Description = str_squish(Description),
+         Title = str_replace_all(Title, "\n", " "))
+```
+
+
+
+
 # Introduction
 
-Since R was first introduced in the August of 1993 with its first official release in the June of 1995 [@ihaka:1996], there was only a small group of core developers. In April of 1997, the Comprehensive R Archive Network (CRAN) was established as the official R-packages repository, with 3 mirror sites. In June 2010, there are 2417 packages from CRAN [@Theu]. In March 2015, there are 6411 packages on CRAN [@DecanAlexandre2015OtDa]. After years of continues thrive of R packages developments, today R is greatly enhanced by over 17 thousands (17481, from the latest cran-name scrap) R-packages contributed by 15112 (number from removing the same authors in the db dataset) of developers all over the world. The source repositories to install R-packages have expanded to Bioconductor, Gitlab, GitHub, R-Forge and 106 CRAN mirrors in 49 regions. Of all the CRAN mirrors, the daily download counts for each package is only readily available from the RStudio CRAN mirror. This is also the default CRAN mirror if not deliberately chosen a CRAN mirror in RStudio [@rstudiocran]. The RStudio CRAN mirror is likely to have the most users as the default mirror for R users. 
+
+Since R was first introduced in the August of 1993 with its first official release in the June of 1995 [@ihaka:1996], there was only a small group of core developers. In April of 1997, the Comprehensive R Archive Network (CRAN) was established as the official R-packages repository, with 3 mirror sites [@firstcran]. In June 2010, there are 2417 packages from CRAN [@Theu]. In March 2015, there are 6411 packages on CRAN [@DecanAlexandre2015OtDa]. After years of continues thrive of R packages developments, today R is greatly enhanced by over `r nrow(db)` R-packages contributed by `r nrow(distinct(db,Author,.keep_all= TRUE))` of developers all over the world. The source repositories to install R-packages have expanded to Bioconductor, Gitlab, GitHub, R-Forge and 106 CRAN mirrors in 49 regions. Of all the CRAN mirrors, the daily download counts for each package is only readily available from the RStudio CRAN mirror. This is also the default CRAN mirror if not deliberately chosen a CRAN mirror in RStudio [@rstudiocran]. The RStudio CRAN mirror is likely to have the most users as the default mirror for R users. 
 
 
 
