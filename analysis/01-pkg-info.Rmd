@@ -9,6 +9,14 @@ library(tidyverse)
 library(lubridate)
 library(rvest)
 library(glue)
+library(dplyr)
+library(purrr)
+library(ggplot2)
+
+
+```
+
+```{r}
 url <- "http://cran.rstudio.com/web/packages/packages.rds"
 db <- readRDS(url(url)) %>% 
   as.data.frame()%>% 
@@ -16,10 +24,55 @@ db <- readRDS(url(url)) %>%
          Description = str_squish(Description),
          Title = str_replace_all(Title, "\n", " "))
 ```
+
+
+```{r remove-same-authors}
+n_pkgs <-nrow(db)
+author<-distinct(db,Author,.keep_all= TRUE)
+nrow(author)
+```
+
+
 An alternative way to get the CRAN R-package names.
 ```{r cran-names}
+library(available)
 cran_names <- rownames(available:::available_packages(repos = available:::default_cran_repos))
 ```
+
+
+
+```{r package-updates}
+library(pkgsearch)
+updates <-map_dfr(cran_names[1:1000], cran_package_history)
+updates_2 <- map_dfr(cran_names[1001:3000], cran_package_history)
+updates_3 <- map_dfr(cran_names[3001:4000], possibly(cran_package_history, NULL))
+updates_4 <- map_dfr(cran_names[4001:6000], possibly(cran_package_history, NULL))
+updates_5 <- map_dfr(cran_names[6001:8000], possibly(cran_package_history, NULL))
+updates_6 <- map_dfr(cran_names[8001:10000], possibly(cran_package_history, NULL))
+updates_7 <- map_dfr(cran_names[10001:12000], possibly(cran_package_history, NULL))
+updates_8 <- map_dfr(cran_names[12001:14000], possibly(cran_package_history, NULL))
+updates_9 <- map_dfr(cran_names[14000:17828], possibly(cran_package_history, NULL))
+
+```
+
+
+```{r select_pkg_ver_date}
+select_pkg_ver_date <- function(x) { 
+      x %>%       
+        select(Package,Version,date)
+}
+
+updates_select <- map_dfr(updates_list, select_pkg_ver_date)
+```
+
+```{r}
+updates_select <- updates_select %>% 
+  mutate(Date=as.Date(updates_select$date)) 
+
+
+```
+
+
 
 
 To get the list of packages for a particular CRAN task view:
@@ -38,7 +91,7 @@ How to get the package updates:
 pkg_url <- "https://cran.r-project.org/web/packages/{pkg}/index.html"
 pkg_archive <- "https://cran.r-project.org/src/contrib/Archive/{pkg}/"
 
-pkgs_of_interest <- doe_pkgs[1:5]
+pkgs_of_interest <- doe_pkgs[1:4]
 pkg_updates <- map(pkgs_of_interest, function(pkg) {
     last_update <- read_html(glue(pkg_url)) %>% 
       html_table() %>% 
