@@ -61,19 +61,43 @@ select_pkg_ver_date <- function(x) {
       x %>%       
         select(Package,Version,date)
 }
-
+updates_list <- 
 updates_select <- map_dfr(updates_list, select_pkg_ver_date)
 ```
 
 ```{r}
 updates_select <- updates_select %>% 
-  mutate(Date=as.Date(updates_select$date)) 
+  mutate(Date=as.Date(updates_select$date))
+```
+```{r}
+first_release <- updates_select %>% 
+  group_by(Package) %>% 
+  filter(Date == min(Date))
 
+first_release %>%
+  group_by(Date) %>%
+  summarise(n = n_distinct(Package)) %>%
+  ggplot()  + geom_line(aes(Date, n))
 
+#seasonality plot 
+# trend - STL/ MA to smooth out the trend 
 ```
 
+```{r}
+first_release %>%
+  filter(Date >= as.Date('1998-01-01') & Date <= as.Date('2010-01-01')) %>% 
+  group_by(Date) %>%
+  summarise(n = n_distinct(Package)) %>% 
+  ggplot()  + geom_point(aes(Date, n))
+```
 
-
+```{r}
+first_release %>%
+  filter(Date >= as.Date('2010-01-01') & Date <= as.Date('2022-01-01')) %>% 
+  group_by(Date) %>%
+  summarise(n = n_distinct(Package)) %>% 
+  ggplot()  + geom_point(aes(Date, n))
+```
 
 To get the list of packages for a particular CRAN task view:
 
@@ -84,6 +108,32 @@ survey_pkgs <- ctv:::.get_pkgs_from_ctv_or_repos("OfficialStatistics",
                                               repos = "http://cran.rstudio.com/")[[1]]
 
 ```
+
+
+```{r}
+update_freq <- updates_select %>% 
+  group_by(Package) %>% 
+  arrange(Date) %>%
+  mutate(diff = c(NA,diff(Date)))
+
+update_avg <- update_freq %>% 
+  select(Package,diff) %>% 
+  na.omit() %>% 
+  group_by(Package) %>%
+  summarise(avg=mean(diff))
+
+ updates_select%>% 
+  filter(Package=="Ecdat")
+
+summary(update_freq$diff)
+
+```
+
+
+
+
+
+
 
 How to get the package updates:
 
