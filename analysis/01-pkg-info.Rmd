@@ -12,7 +12,8 @@ library(glue)
 library(dplyr)
 library(purrr)
 library(ggplot2)
-
+library(feasts)
+library(cranlogs)
 
 ```
 
@@ -39,9 +40,163 @@ library(available)
 cran_names <- rownames(available:::available_packages(repos = available:::default_cran_repos))
 ```
 
+```{r}
+# getting the total R packages download numbers from 1998
+dd_start <- "1998-01-01"
+dd_end <- Sys.Date() - 1
+
+is_weekend <- function(date) {
+  weekdays(date) %in% c("Saturday", "Sunday")
+}
+
+total_downloads <- cran_downloads(from = dd_start, to = dd_end) %>% 
+  mutate(year = year(date),
+         day = yday(date),
+         weekend = is_weekend(date)) %>% 
+  filter(row_number() <= n()-1)
+
+total_downloads %>%
+  ggplot()  + geom_line(aes(date, count))+
+  geom_smooth(aes(date, count),stat = "smooth") 
+```
+```{r user-conference}
+# adding the userR conference date 
+download_user <- total_downloads %>%
+  ggplot()  + geom_line(aes(date, count)) +
+  geom_vline(xintercept = as.numeric(as.Date("2004-05-20")), linetype="dotted", 
+                color = "blue", size=0.1)+
+  geom_vline(xintercept = as.numeric(as.Date("2006-06-15")), linetype="dotted", 
+                color = "blue", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2007-08-08")), linetype="dotted", 
+                color = "blue", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2008-08-14")), linetype="dotted", 
+                color = "blue", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2009-07-08")), linetype="dotted", 
+                color = "blue", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2010-07-20")), linetype="dotted", 
+                color = "blue", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2011-08-16")), linetype="dotted", 
+                color = "blue", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2012-06-12")), linetype="dotted", 
+                color = "blue", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2013-06-10")), linetype="dotted", 
+                color = "blue", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2014-06-30")), linetype="dotted", 
+                color = "blue", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2015-06-30")), linetype="dotted", 
+                color = "blue", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2016-06-27")), linetype="dotted", 
+                color = "blue", size=0.1) +
+    geom_vline(xintercept = as.numeric(as.Date("2017-07-04")), linetype="dotted", 
+                color = "blue", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2018-07-10")), linetype="dotted", 
+                color = "blue", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2019-07-09")), linetype="dotted", 
+                color = "blue", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2020-07-07")), linetype="dotted", 
+                color = "blue", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2021-07-05")), linetype="dotted", 
+                color = "blue", size=0.1) 
+ggplotly(download_user,dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+```
+```{r}
+# adding the RStudio conference date 
+download_rstudio <- total_downloads %>%
+  ggplot()  + geom_line(aes(date, count)) +
+  geom_vline(xintercept = as.numeric(as.Date("2021-03-03")), linetype="dotted", 
+                color = "red", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2020-01-27")), linetype="dotted", 
+                color = "red", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2019-01-15")), linetype="dotted", 
+                color = "red", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2018-01-31")), linetype="dotted", 
+                color = "red", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date("2017-01-11")), linetype="dotted", 
+                color = "red", size=0.1) 
+
+ggplotly(download_rstudio,dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+
+```
+```{r}
+# working days effect 
+total_downloads %>% 
+  as_tsibble(index = date) %>% 
+  gg_subseries(count,period = "week")
+```
+
+
+```{r}
+# STL decomposition 
+total_downloads %>% 
+  as_tsibble(index = date) %>% 
+  model(
+    STL(count ~ trend(window=77) +
+        season("week", window="periodic"))
+  ) %>%
+  components() %>% 
+  autoplot() +
+  geom_vline(xintercept = as.numeric(as.Date("2004-05-20")), linetype="dotted", 
+                color = "blue", size=1)+
+  geom_vline(xintercept = as.numeric(as.Date("2006-06-15")), linetype="dotted", 
+                color = "blue", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2007-08-08")), linetype="dotted", 
+                color = "blue", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2008-08-14")), linetype="dotted", 
+                color = "blue", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2009-07-08")), linetype="dotted", 
+                color = "blue", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2010-07-20")), linetype="dotted", 
+                color = "blue", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2011-08-16")), linetype="dotted", 
+                color = "blue", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2012-06-12")), linetype="dotted", 
+                color = "blue", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2013-06-10")), linetype="dotted", 
+                color = "blue", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2014-06-30")), linetype="dotted", 
+                color = "blue", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2015-06-30")), linetype="dotted", 
+                color = "blue", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2016-06-27")), linetype="dotted", 
+                color = "blue", size=1) +
+    geom_vline(xintercept = as.numeric(as.Date("2017-07-04")), linetype="dotted", 
+                color = "blue", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2018-07-10")), linetype="dotted", 
+                color = "blue", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2019-07-09")), linetype="dotted", 
+                color = "blue", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2020-07-07")), linetype="dotted", 
+                color = "blue", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2021-07-05")), linetype="dotted", 
+                color = "blue", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2021-03-03")), linetype="dotted", 
+                color = "red", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2020-01-27")), linetype="dotted", 
+                color = "red", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2019-01-15")), linetype="dotted", 
+                color = "red", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2018-01-31")), linetype="dotted", 
+                color = "red", size=1) +
+  geom_vline(xintercept = as.numeric(as.Date("2017-01-11")), linetype="dotted", 
+                color = "red", size=1) 
+
+download_reminder <- total_downloads %>% 
+  as_tsibble(index = date) %>% 
+  model(STL(count)) %>%
+  components()
+
+
+
+```
+
+
+
 
 
 ```{r package-updates}
+# Getting all the updates data 
 library(pkgsearch)
 updates <-map_dfr(cran_names[1:1000], cran_package_history)
 updates_2 <- map_dfr(cran_names[1001:3000], cran_package_history)
@@ -53,6 +208,68 @@ updates_7 <- map_dfr(cran_names[10001:12000], possibly(cran_package_history, NUL
 updates_8 <- map_dfr(cran_names[12001:14000], possibly(cran_package_history, NULL))
 updates_9 <- map_dfr(cran_names[14000:17828], possibly(cran_package_history, NULL))
 
+```
+
+
+```{r}
+# Select top 10 packages from last month 
+
+top_downloads <- cran_top_downloads("last-month")
+
+updates_top <- updates_select %>% 
+  filter(Package %in% top_downloads$package)
+
+
+downloads_top <- cran_downloads(from = "2014-01-01",to = "2021-07-05", package = top_downloads$package) 
+
+downloads_top %>% 
+  ggplot() + 
+  geom_line(aes(date, count,col = package))
+  
+
+
+```
+
+```{r}
+# updates and ggplot2 downloads pattern 
+ggplot2 <- downloads_top %>% 
+  filter(package == "ggplot2") %>% 
+  ggplot() + 
+  geom_line(aes(date, count))+
+  geom_vline(xintercept = updates_top$Date, linetype="dotted", color = "red",   
+             size=0.1)
+
+ ggplotly(ggplot2,dynamicTicks = TRUE) %>%
+  layout(hovermode = "x") 
+```
+
+```{r}
+# updates and dplyr downloads pattern 
+
+dplyr <- downloads_top %>% 
+  filter(package == "dplyr") %>% 
+  ggplot() + 
+  geom_line(aes(date, count))+
+  geom_vline(xintercept = updates_top$Date, linetype="dotted", color = "red",   
+             size=0.1)
+
+
+ggplotly(dplyr,dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+```
+```{r}
+# updates and tibble downloads pattern 
+
+tibble <- downloads_top %>% 
+  filter(package == "tibble") %>% 
+  ggplot() + 
+  geom_line(aes(date, count))+
+  geom_vline(xintercept = updates_top$Date , linetype="dotted", color = "red",   
+             size=0.1)
+
+
+ggplotly(tibble,dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
 ```
 
 
@@ -68,7 +285,17 @@ updates_select <- map_dfr(updates_list, select_pkg_ver_date)
 ```{r}
 updates_select <- updates_select %>% 
   mutate(Date=as.Date(updates_select$date))
+
+### No. of packages in CRAN before 2010 June 
+nrow(updates_select %>%  
+    group_by(Package) %>% 
+  filter (Date <="2010-06-30") %>% 
+  filter(Version == max(Version)))
+
 ```
+
+
+
 ```{r}
 first_release <- updates_select %>% 
   group_by(Package) %>% 
@@ -77,27 +304,31 @@ first_release <- updates_select %>%
 first_release %>%
   group_by(Date) %>%
   summarise(n = n_distinct(Package)) %>%
-  ggplot()  + geom_line(aes(Date, n))
+  ggplot()  + geom_point(aes(Date, n))+
+  geom_smooth(aes(Date, n),stat = "smooth")
 
-#seasonality plot 
-# trend - STL/ MA to smooth out the trend 
+
 ```
 
 ```{r}
-first_release %>%
-  filter(Date >= as.Date('1998-01-01') & Date <= as.Date('2010-01-01')) %>% 
+
+n_package <-first_release %>%
   group_by(Date) %>%
-  summarise(n = n_distinct(Package)) %>% 
-  ggplot()  + geom_point(aes(Date, n))
+  summarise(n = n_distinct(Package))
+n_package
+
 ```
 
+
 ```{r}
-first_release %>%
-  filter(Date >= as.Date('2010-01-01') & Date <= as.Date('2022-01-01')) %>% 
-  group_by(Date) %>%
-  summarise(n = n_distinct(Package)) %>% 
-  ggplot()  + geom_point(aes(Date, n))
+library(plotly)
+
+plot_ly(x = n_package$Date, y =  n_package$n, mode = 'lines')
 ```
+
+
+
+
 
 To get the list of packages for a particular CRAN task view:
 
