@@ -14,6 +14,8 @@ library(purrr)
 library(ggplot2)
 library(feasts)
 library(cranlogs)
+library(stringr)
+library(installr)
 
 ```
 
@@ -31,6 +33,36 @@ db <- readRDS(url(url)) %>%
 n_pkgs <-nrow(db)
 author<-distinct(db,Author,.keep_all= TRUE)
 nrow(author)
+nonr_author<-sapply(strsplit(as.character(author$Author), " \\(") , "[" , 1) 
+rstudio<- str_detect(author$Author, "RStudio") %>% 
+  sum(na.rm = TRUE)
+
+
+
+pkg_rstusio <- db %>%
+  filter(grepl('RStudio', Author)) %>%
+  select(Package) 
+
+
+# filter the packages whose author is from R core group
+pkg_core <- db %>%
+  filter(grepl('Douglas Bates|John Chambers|Peter Dalgaard|Robert Gentleman|Kurt Hornik|Ross Ihaka|Tomas Kalibera|Michael Lawrence|Friedrich Leisch|Uwe Ligges|Thomas Lumley|Martin Maechler|Martin Morgan|Paul Murrell|Brian Ripley|Deepayan Sarkar|Duncan Temple Lang|Luke Tierney|Simon Urbanek|Martyn Plummer|', Author)) %>%
+  select(Package)
+
+# filter the packages whose author is on R secondary group
+pkg_secondary <- db %>%
+  filter(!grepl('Guido Masarotto|Duncan Murdoch|Henrik Bengtsson|Roger Bivand|Ben Bolker|David Brahm|Vince Carey|Saikat DebRoy|Matt Dowle|Dirk Eddelbuettel|Claus Ekstrom|John Fox|Paul Gilbert|Yu Gong|Gabor Grothendieck|Frank E Harrell Jr|Peter M. Haverty|Torsten Hothorn|Robert King|Kjetil Kjernsmo|Roger Koenker|Philippe Lambert|Jan de Leeuw|Jim Lindsey|Patrick Lindsey|Catherine Loader| Gordon Maclean|Arni Magnusson|John Maindonald|David Meyer|Ei-ji Nakama|Jens Oehlschägel|Steve Oncley|Richard O’Keefe|Hubert Palme|Roger D. Peng|José C. Pinheiro|Tony Plate|Anthony Rossini| Jonathan Rougier|Petr Savicky|Günther Sawitzki|Marc Schwartz|Arun Srinivasan|Detlef Steuer|Bill Simpson|Gordon Smyth|Adrian Trapletti|Terry Therneau|Rolf Turner|Bill Venables|Gregory R. Warnes| Andreas Weingessel|Morten Welinder|James Wettenhall|Simon Wood|and Achim Zeileis', Author)) %>%
+  select(Package) 
+
+
+pkg_r_related <- db %>%
+  filter(stringr::str_detect(Author, 'Hadley Wickham|Yihui Xie|Gabor Csardi|Winston Chang|Andrie de Vries|Alison Presmanes Hill|Mara Averick|Cole Arendt|Daniel Falbel|Garrick Aden-Buie|Garrett Grolemund|Gary|Joe Cheng|Jennifer (Jenny) Bryan|Jim Hester|J.J. Allaire|Jonathan|Joshua Spiewak|Dan Buch|Richard Iannone|Ralf Stubner|Tyler Finethy|Melissa Barca|Kevin Ushey|Javier Luraschi|Karl Feinauer|Charles Teague|Maria Semple|adamconroy|Ricardo Andrade|Steve Nolen|Randy Lai|Jeffrey Horner|Jan Marvin Garbuszus|Justace Clutter|Josh Paulson|Mike Bessuille|Jeffrey Arnold|Paul Kaefer|Jim Hester|Dirk Schumacher|
+Philipp A.|Fabian Mundt|Fabian Mundt|boB Rudis|Asher|Henrik Bengtsson|James Lamb|rich-rstudio|Andrie de Vries|Iñaki Ucar|Mark Brown|Hiroaki Yutani|Dean Attali|Matthias Mailänder|Bruno Tremblay|Ian|John Blischak|Chris von Csefalvay|Jeroen Ooms|
+Daniel Gromer|Kirill Müller|Jan Gleixner|Alexander Grueneberg|Darío Hereñú|Aron Atkins|harupiko|Barret Schloerke|James Arnold|Giuseppe Casalicchio|Fredric Johansson|Curtis Kephart|reudismam|Jeff Allen|Yuri Niyazov|Sean Kross|Carl A. B. Pearson|
+Peter Glerup Ericson|Diomidis Spinellis|Paul Menzel|Lincoln Mullen|Colin Gillespie|Masafumi Okada|Øystein Sørensen|Matthew Grogan|Scott Kostyshak|Marcus Kinsella|rhinopotamus|Daiki Katsuragawa|Michael Steinbaugh|Jari Karppinen|Roy Storey|Kristofer Rye|Erin|Ben Torvaney|Pol Mesalles|Sainath Adapa|Vladimir Panfilov|Christian Brueffer|Julien Barnier|') )%>%
+  select(Package) 
+
+
 ```
 
 
@@ -42,7 +74,7 @@ cran_names <- rownames(available:::available_packages(repos = available:::defaul
 
 ```{r}
 # getting the total R packages download numbers from 1998
-dd_start <- "1998-01-01"
+dd_start <- "2012-10-01"
 dd_end <- Sys.Date() - 1
 
 is_weekend <- function(date) {
@@ -59,71 +91,78 @@ total_downloads %>%
   ggplot()  + geom_line(aes(date, count))+
   geom_smooth(aes(date, count),stat = "smooth") 
 ```
+```{r  2014-11-17}
+spilk_2014_dir <- download_RStudio_CRAN_data(START = '2014-11-17',END = '2014-11-17', log_folder="/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/paper/Data")
+# read .gz compressed files form local directory
+spilk_2014 <- read_RStudio_CRAN_data(spilk_2014_dir)
+
+
+country_2014 <- spilk_2014 %>%  
+  group_by(country) %>% 
+  count() 
+
+
+```
+
+
+
+
+
 ```{r user-conference}
 # adding the userR conference date 
+
+conference_dates <- tribble(
+  ~ name, ~ date,
+  "UseR", "2004-05-20",
+  "UseR", "2006-06-15",
+  "UseR", "2007-08-08",
+  "UseR", "2008-08-14",
+  "UseR", "2009-07-08",
+  "UseR", "2010-07-20",
+  "UseR", "2011-08-16",
+  "UseR", "2012-06-12",
+  "UseR", "2013-06-10",
+  "UseR", "2014-06-30",
+  "UseR", "2015-06-30",
+  "UseR", "2016-06-27",
+  "UseR", "2017-07-04",
+  "UseR", "2018-07-10",
+  "UseR", "2019-07-09",
+  "UseR", "2020-07-07",
+  "UseR", "2021-07-05",
+  "RStudio", "2017-01-11",
+  "RStudio", "2018-01-31",
+  "RStudio", "2019-01-15",
+  "RStudio", "2020-01-27",
+  "RStudio", "2021-03-03",
+)
+
+UseR <- dplyr::filter(conference_dates,name == "UseR")
+Rstudio <-dplyr::filter(conference_dates,name == "RStudio")
+
 download_user <- total_downloads %>%
   ggplot()  + geom_line(aes(date, count)) +
-  geom_vline(xintercept = as.numeric(as.Date("2004-05-20")), linetype="dotted", 
+  geom_vline(xintercept = as.numeric(as.Date(UseR$date)), linetype="dotted", 
                 color = "blue", size=0.1)+
-  geom_vline(xintercept = as.numeric(as.Date("2006-06-15")), linetype="dotted", 
-                color = "blue", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2007-08-08")), linetype="dotted", 
-                color = "blue", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2008-08-14")), linetype="dotted", 
-                color = "blue", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2009-07-08")), linetype="dotted", 
-                color = "blue", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2010-07-20")), linetype="dotted", 
-                color = "blue", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2011-08-16")), linetype="dotted", 
-                color = "blue", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2012-06-12")), linetype="dotted", 
-                color = "blue", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2013-06-10")), linetype="dotted", 
-                color = "blue", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2014-06-30")), linetype="dotted", 
-                color = "blue", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2015-06-30")), linetype="dotted", 
-                color = "blue", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2016-06-27")), linetype="dotted", 
-                color = "blue", size=0.1) +
-    geom_vline(xintercept = as.numeric(as.Date("2017-07-04")), linetype="dotted", 
-                color = "blue", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2018-07-10")), linetype="dotted", 
-                color = "blue", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2019-07-09")), linetype="dotted", 
-                color = "blue", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2020-07-07")), linetype="dotted", 
-                color = "blue", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2021-07-05")), linetype="dotted", 
-                color = "blue", size=0.1) 
+  geom_vline(xintercept = as.numeric(as.Date(Rstudio$date)), linetype="dotted", 
+                color = "red", size=0.1) 
+   
 ggplotly(download_user,dynamicTicks = TRUE) %>%
   layout(hovermode = "x")
 ```
-```{r}
-# adding the RStudio conference date 
-download_rstudio <- total_downloads %>%
-  ggplot()  + geom_line(aes(date, count)) +
-  geom_vline(xintercept = as.numeric(as.Date("2021-03-03")), linetype="dotted", 
-                color = "red", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2020-01-27")), linetype="dotted", 
-                color = "red", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2019-01-15")), linetype="dotted", 
-                color = "red", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2018-01-31")), linetype="dotted", 
-                color = "red", size=0.1) +
-  geom_vline(xintercept = as.numeric(as.Date("2017-01-11")), linetype="dotted", 
-                color = "red", size=0.1) 
 
-ggplotly(download_rstudio,dynamicTicks = TRUE) %>%
-  layout(hovermode = "x")
-
-```
 ```{r}
 # working days effect 
 total_downloads %>% 
   as_tsibble(index = date) %>% 
   gg_subseries(count,period = "week")
+```
+
+```{r}
+
+summary(total_downloads$count)
+total_downloads %>%
+  ggplot()  + geom_line(aes(date, log(total_downloads$count +1 ))) 
 ```
 
 
@@ -132,60 +171,13 @@ total_downloads %>%
 total_downloads %>% 
   as_tsibble(index = date) %>% 
   model(
-    STL(count ~ trend(window=77) +
+    STL(log(count+1) ~ trend(window=77) +
         season("week", window="periodic"))
   ) %>%
   components() %>% 
   autoplot() +
-  geom_vline(xintercept = as.numeric(as.Date("2004-05-20")), linetype="dotted", 
-                color = "blue", size=1)+
-  geom_vline(xintercept = as.numeric(as.Date("2006-06-15")), linetype="dotted", 
-                color = "blue", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2007-08-08")), linetype="dotted", 
-                color = "blue", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2008-08-14")), linetype="dotted", 
-                color = "blue", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2009-07-08")), linetype="dotted", 
-                color = "blue", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2010-07-20")), linetype="dotted", 
-                color = "blue", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2011-08-16")), linetype="dotted", 
-                color = "blue", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2012-06-12")), linetype="dotted", 
-                color = "blue", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2013-06-10")), linetype="dotted", 
-                color = "blue", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2014-06-30")), linetype="dotted", 
-                color = "blue", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2015-06-30")), linetype="dotted", 
-                color = "blue", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2016-06-27")), linetype="dotted", 
-                color = "blue", size=1) +
-    geom_vline(xintercept = as.numeric(as.Date("2017-07-04")), linetype="dotted", 
-                color = "blue", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2018-07-10")), linetype="dotted", 
-                color = "blue", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2019-07-09")), linetype="dotted", 
-                color = "blue", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2020-07-07")), linetype="dotted", 
-                color = "blue", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2021-07-05")), linetype="dotted", 
-                color = "blue", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2021-03-03")), linetype="dotted", 
-                color = "red", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2020-01-27")), linetype="dotted", 
-                color = "red", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2019-01-15")), linetype="dotted", 
-                color = "red", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2018-01-31")), linetype="dotted", 
-                color = "red", size=1) +
-  geom_vline(xintercept = as.numeric(as.Date("2017-01-11")), linetype="dotted", 
-                color = "red", size=1) 
-
-download_reminder <- total_downloads %>% 
-  as_tsibble(index = date) %>% 
-  model(STL(count)) %>%
-  components()
+  geom_vline(xintercept = as.numeric(as.Date(UseR$date)), linetype="dotted",color = "blue", size=0.1) +
+  geom_vline(xintercept = as.numeric(as.Date(Rstudio$date)), linetype="dotted",color = "red", size=0.1) 
 
 
 
@@ -244,6 +236,24 @@ ggplot2 <- downloads_top %>%
 ```
 
 ```{r}
+STL_ggplot <- downloads_top %>% 
+  filter(package == "ggplot2") %>% 
+  as_tsibble(index = date) %>% 
+  model(
+    STL(log(count+1) ~ trend(window=NULL) +
+        season("week", window="periodic"))
+  ) %>%
+  components() %>% 
+  autoplot() +
+  geom_vline(xintercept = updates_top$Date, linetype="dotted",color = "blue", size=0.1)
+
+ggplotly(STL_ggplot,dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+
+```
+
+
+```{r}
 # updates and dplyr downloads pattern 
 
 dplyr <- downloads_top %>% 
@@ -252,7 +262,6 @@ dplyr <- downloads_top %>%
   geom_line(aes(date, count))+
   geom_vline(xintercept = updates_top$Date, linetype="dotted", color = "red",   
              size=0.1)
-
 
 ggplotly(dplyr,dynamicTicks = TRUE) %>%
   layout(hovermode = "x")
@@ -266,7 +275,6 @@ tibble <- downloads_top %>%
   geom_line(aes(date, count))+
   geom_vline(xintercept = updates_top$Date , linetype="dotted", color = "red",   
              size=0.1)
-
 
 ggplotly(tibble,dynamicTicks = TRUE) %>%
   layout(hovermode = "x")
@@ -304,7 +312,7 @@ first_release <- updates_select %>%
 first_release %>%
   group_by(Date) %>%
   summarise(n = n_distinct(Package)) %>%
-  ggplot()  + geom_point(aes(Date, n))+
+  ggplot()  + geom_line(aes(Date, n))+
   geom_smooth(aes(Date, n),stat = "smooth")
 
 
