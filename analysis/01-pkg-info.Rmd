@@ -16,6 +16,8 @@ library(feasts)
 library(cranlogs)
 library(stringr)
 library(installr)
+library(plotly)
+library(scales)
 
 ```
 
@@ -33,12 +35,15 @@ db <- readRDS(url(url)) %>%
 n_pkgs <-nrow(db)
 author<-distinct(db,Author,.keep_all= TRUE)
 nrow(author)
+
 nonr_author<-sapply(strsplit(as.character(author$Author), " \\(") , "[" , 1) 
+
+#getting all the RStudio copyright ownership
 rstudio<- str_detect(author$Author, "RStudio") %>% 
   sum(na.rm = TRUE)
 
 
-
+# non-RStudio ownership
 pkg_rstusio <- db %>%
   filter(grepl('RStudio', Author)) %>%
   select(Package) 
@@ -87,19 +92,90 @@ total_downloads <- cran_downloads(from = dd_start, to = dd_end) %>%
          weekend = is_weekend(date)) %>% 
   filter(row_number() <= n()-1)
 
+
+# replace missing values with the nearest number 
+total_downloads$count[total_downloads$count == 0] <- 21959
+
+
+
 total_downloads %>%
   ggplot()  + geom_line(aes(date, count))+
   geom_smooth(aes(date, count),stat = "smooth") 
 ```
-```{r  2014-11-17}
-spilk_2014_dir <- download_RStudio_CRAN_data(START = '2014-11-17',END = '2014-11-17', log_folder="/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/paper/Data")
-# read .gz compressed files form local directory
-spilk_2014 <- read_RStudio_CRAN_data(spilk_2014_dir)
 
+
+
+
+```{r  2014-11-17}
+```{r , cache=TRUE, message=FALSE,  results=FALSE, warning=FALSE, comment=FALSE}
+#spilk_2014_dir <- download_RStudio_CRAN_data(START = '2014-11-17',END = '2014-11-17', log_folder="/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/paper/Data")
+
+# read .gz compressed files form local directory
+#spilk_2014 <- read.csv("~/Documents/GitHub/paper-cran-category-classification/paper/Data/2014-11-17.csv.gz")
+
+#save(spilk_2014, file = "spilk_2014.RData")
+
+load(here::here("paper/spilk_2014.RData"))
 
 country_2014 <- spilk_2014 %>%  
   group_by(country) %>% 
-  count() 
+  count()
+
+ID_2014 <- spilk_2014 %>%  
+  group_by(country,ip_id) %>% 
+  count()
+
+pkg_ID_2014 <- spilk_2014 %>%  
+  group_by(country,ip_id,package) %>% 
+  count()
+
+ido <- max(ID_2014$n)/sum(ID_2014$n)
+
+
+download_141116 <-total_downloads %>% 
+  filter(date == "2014-11-16")
+
+download_141118 <-total_downloads %>% 
+  filter(date == "2014-11-18")
+
+
+spilk_2014 %>% 
+  mutate(obsid = paste(country, ip_id, package)) %>% 
+  pull(obsid) %>% 
+  n_distinct()
+
+```
+
+```{r , cache=TRUE, message=FALSE,  results=FALSE, warning=FALSE, comment=FALSE}
+
+#spilk_2018_dir <- download_RStudio_CRAN_data(START = '2018-10-21',END = '2018-10-21', log_folder="/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/paper/Data")
+
+# read .gz compressed files form local directory
+#spilk_2018 <- read_RStudio_CRAN_data(spilk_2018_dir)
+
+#save(spilk_2018, file = "spilk_2018.RData")
+
+load("~/Documents/GitHub/paper-cran-category-classification/paper/spilk_2018.RData")
+
+country_2018 <- spilk_2018 %>%  
+  group_by(country) %>% 
+  count()
+
+ID_2018 <- spilk_2018 %>%  
+  group_by(country,ip_id) %>% 
+  count()
+
+pkg_ID_18 <- spilk_2018 %>%  
+  group_by(country,ip_id,package) %>% 
+  count()
+
+
+top15 <- pkg_ID_18[pkg_ID_18$n %in% tail(sort(pkg_ID_18$n),15),]
+
+us_18 <- top15 %>% 
+  group_by(country,package) %>% 
+   summarise(n = sum(n))
+
 
 
 ```
@@ -151,6 +227,18 @@ ggplotly(download_user,dynamicTicks = TRUE) %>%
   layout(hovermode = "x")
 ```
 
+
+
+```{r}
+summary(total_downloads$count)
+total_downloads %>%
+  ggplot()  + geom_line(aes(date, log(total_downloads$count))) 
+```
+
+
+
+
+
 ```{r}
 # working days effect 
 total_downloads %>% 
@@ -159,15 +247,7 @@ total_downloads %>%
 ```
 
 ```{r}
-
-summary(total_downloads$count)
-total_downloads %>%
-  ggplot()  + geom_line(aes(date, log(total_downloads$count +1 ))) 
-```
-
-
-```{r}
-# STL decomposition 
+# STL decomposition of total R package downloads 
 total_downloads %>% 
   as_tsibble(index = date) %>% 
   model(
@@ -185,8 +265,6 @@ total_downloads %>%
 
 
 
-
-
 ```{r package-updates}
 # Getting all the updates data 
 library(pkgsearch)
@@ -199,6 +277,19 @@ updates_6 <- map_dfr(cran_names[8001:10000], possibly(cran_package_history, NULL
 updates_7 <- map_dfr(cran_names[10001:12000], possibly(cran_package_history, NULL))
 updates_8 <- map_dfr(cran_names[12001:14000], possibly(cran_package_history, NULL))
 updates_9 <- map_dfr(cran_names[14000:17828], possibly(cran_package_history, NULL))
+
+```
+
+
+```{r}
+updates_select <- updates_select %>% 
+  mutate(Date=as.Date(updates_select$date))
+
+### No. of packages in CRAN before 2010 June 
+nrow(updates_select %>%  
+    group_by(Package) %>% 
+  filter (Date <="2010-06-30") %>% 
+  filter(Version == max(Version)))
 
 ```
 
@@ -236,6 +327,7 @@ ggplot2 <- downloads_top %>%
 ```
 
 ```{r}
+# STL decomposition on ggplot 
 STL_ggplot <- downloads_top %>% 
   filter(package == "ggplot2") %>% 
   as_tsibble(index = date) %>% 
@@ -290,18 +382,46 @@ updates_list <-
 updates_select <- map_dfr(updates_list, select_pkg_ver_date)
 ```
 
-```{r}
-updates_select <- updates_select %>% 
-  mutate(Date=as.Date(updates_select$date))
 
-### No. of packages in CRAN before 2010 June 
-nrow(updates_select %>%  
-    group_by(Package) %>% 
-  filter (Date <="2010-06-30") %>% 
-  filter(Version == max(Version)))
+
+
+```{r}
+# non-RStudio packages updates
+
+updates_forecast <- updates_select %>% 
+  filter(Package == "forecast") %>% 
+  filter(Date >= as.Date("2012-10-29"))
+
+
+forecast_download <- cran_downloads(packages = "forecast",from = "2012-10-29", to = "2021-07-12")
+
+forecast <- forecast_download %>% 
+  ggplot() + 
+  geom_line(aes(date, count))+
+  geom_vline(xintercept = updates_forecast$Date , linetype="dotted", color = "red", size=0.1)+ 
+  scale_x_date(limits = as.Date(c('2012-10-29','2021-07-12')))
+
+ggplotly(forecast,dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
 
 ```
 
+
+```{r}
+STL_forecast <- forecast_download %>% 
+  as_tsibble(index = date) %>% 
+  model(
+    STL(log(count+1) ~ trend(window=NULL) +
+        season("week", window="periodic"))
+  ) %>%
+  components() %>% 
+  autoplot() +
+  geom_vline(xintercept = updates_forecast$Date, linetype="dotted",color = "blue", size=0.1)
+
+ggplotly(STL_forecast,dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+
+```
 
 
 ```{r}
@@ -319,13 +439,107 @@ first_release %>%
 ```
 
 ```{r}
+library(cranlogs)
+library(purrr)
 
 n_package <-first_release %>%
   group_by(Date) %>%
   summarise(n = n_distinct(Package))
-n_package
+
+download_1 <- cran_downloads(packages= c(cran_names[1:100]),when = "last-week")
+download_2 <- cran_downloads(packages= c(cran_names[101:200]),when = "last-week")
+download_3 <- cran_downloads(packages= c(cran_names[201:300]),when = "last-week")
+
+datalist <- list()
+
+for(i in 2:175){
+  Sys.time(sample(1:10))
+  download <- cran_downloads(packages= c(cran_names[((i-1)*100+1):i*100]),when = "last-week")
+  datalist[[i]] <-  download # add it to your list
+}
+
 
 ```
+
+```{r}
+library(httr)
+library(jsonlite)
+base_url  <- "http://cranlogs.r-pkg.org/"
+daily_url <- paste0(base_url, "downloads/daily/")
+top_url   <- paste0(base_url, "top/")
+
+get_downloads <- function (when = c("last-day", "last-week", "last-month"), count = 100) 
+{
+    when <- match.arg(when)
+    req <- GET(paste0(top_url, when, "/", count))
+    stop_for_status(req)
+    r <- fromJSON(content(req, as = "text", encoding = "UTF-8"), 
+        simplifyVector = FALSE)
+    df <- data.frame(stringsAsFactors = FALSE, 
+        package = vapply(r$downloads, "[[", "", "package"), count = as.integer(vapply(r$downloads, 
+            "[[", "", "downloads")), from = as.Date(r$start), 
+        to = as.Date(r$end))
+    if (nrow(df) != count) {
+        warning("Requested ", count, " packages, returned only ", 
+            nrow(df))
+    }
+    df
+}
+```
+
+```{r}
+
+#getting the top 100 downloads for last month 
+
+download_top100 <- get_downloads(when="last-month")
+
+top_100 <- db %>% 
+  mutate(Package = as.character(Package)) %>%
+  filter(Package %in% download_top100$package )  %>%
+  filter(!grepl('RStudio', Author)) %>%
+  select(Package) 
+
+# Non RStudio downloads 
+top_nonrstudio <- download_top100 %>% 
+  filter(package %in% top_100$Package )
+
+
+updates_jsonlite <- updates_select %>% 
+  filter(Package == "jsonlite") %>% 
+  filter(Date >= as.Date("2012-10-29"))
+
+
+jsonlite_download <- cran_downloads(packages = "jsonlite",from = "2013-12-04", to = "2021-07-12")
+
+jsonlite <- jsonlite_download %>% 
+  ggplot() + 
+  geom_line(aes(date, count))+
+  geom_vline(xintercept = updates_jsonlite$Date , linetype="dotted", color = "red", size=0.1)+ 
+  scale_x_date(limits = as.Date(c('2013-12-04','2021-07-12')))
+
+ggplotly(jsonlite,dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+
+```
+
+```{r}
+updates_glue <- updates_select %>% 
+  filter(Package == "glue") %>% 
+  filter(Date >= as.Date("2012-10-29"))
+
+
+glue_download <- cran_downloads(packages = "glue",from = "2017-04-17", to = "2021-07-12")
+
+glue <- glue_download %>% 
+  ggplot() + 
+  geom_line(aes(date, count))+
+  geom_vline(xintercept = updates_glue$Date , linetype="dotted", color = "red", size=0.1) + scale_x_date(limits = as.Date(c('2017-04-17','2021-07-12')))
+
+ggplotly(glue,dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+```
+
+
 
 
 ```{r}
