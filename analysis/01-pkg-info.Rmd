@@ -18,6 +18,7 @@ library(stringr)
 library(installr)
 library(plotly)
 library(scales)
+library(lubridate)
 
 ```
 
@@ -278,6 +279,19 @@ updates_7 <- map_dfr(cran_names[10001:12000], possibly(cran_package_history, NUL
 updates_8 <- map_dfr(cran_names[12001:14000], possibly(cran_package_history, NULL))
 updates_9 <- map_dfr(cran_names[14000:17828], possibly(cran_package_history, NULL))
 
+updates_select <- c(updates,updates_2,updates_3,updates_4,updates_5,updates_6,updates_7,updates_8,updates_9)
+
+save(updates, file = "updates.Rdata")
+save(updates_2, file = "updates_2.Rdata")
+save(updates_3, file = "updates_3.Rdata")
+save(updates_4, file = "updates_4.Rdata")
+save(updates_5, file = "updates_5.Rdata")
+save(updates_6, file = "updates_6.Rdata")
+save(updates_7, file = "updates_7.Rdata")
+save(updates_8, file = "updates_8.Rdata")
+save(updates_9, file = "updates_9.Rdata")
+
+
 ```
 
 
@@ -358,6 +372,9 @@ dplyr <- downloads_top %>%
 ggplotly(dplyr,dynamicTicks = TRUE) %>%
   layout(hovermode = "x")
 ```
+
+
+
 ```{r}
 # updates and tibble downloads pattern 
 
@@ -425,6 +442,19 @@ ggplotly(STL_forecast,dynamicTicks = TRUE) %>%
 
 
 ```{r}
+library(packageRank)
+packageLog(package = "forecast", date = "2015-10-20")[8:14, -(4:6)]
+tidyverse_2018 <- packageLog(package = "tidyverse", date = "2018-10-21")
+filteredDownloads(package = "forecast", date = "2018-10-21")
+filteredDownloads(package = "cholera", date = "2020-07-31")
+
+```
+
+
+
+
+
+```{r}
 first_release <- updates_select %>% 
   group_by(Package) %>% 
   filter(Date == min(Date))
@@ -437,6 +467,10 @@ first_release %>%
 
 
 ```
+
+
+
+
 
 ```{r}
 library(cranlogs)
@@ -452,8 +486,8 @@ download_3 <- cran_downloads(packages= c(cran_names[201:300]),when = "last-week"
 
 datalist <- list()
 
-for(i in 2:175){
-  Sys.time(sample(1:10))
+for(i in 26:175){
+  Sys.sleep(sample(1:10))
   download <- cran_downloads(packages= c(cran_names[((i-1)*100+1):i*100]),when = "last-week")
   datalist[[i]] <-  download # add it to your list
 }
@@ -537,6 +571,17 @@ glue <- glue_download %>%
 
 ggplotly(glue,dynamicTicks = TRUE) %>%
   layout(hovermode = "x")
+```
+
+```{r}
+updates_select %>% group_by(Package) %>% summarise(n = n(), last = max(Date)) %>% filter(n > 2) %>% arrange(desc(n))
+
+
+library(aTSA)
+stationary.test(jsonlite_download$count, method = "adf", nlag = NULL, type = c("Z_rho", "Z_tau"), lag.short = TRUE, output = TRUE)
+# reject Null - non-stationary 
+
+
 ```
 
 
@@ -626,5 +671,82 @@ updates <- unlist(pkg_updates) %>%
          package = str_extract(package, paste0(pkgs_of_interest, collapse="|"))) 
 
 updates
+```
+
+
+
+```{r}
+#dependency analysis 
+depends <- sapply(strsplit(as.character(db$Depends) , " \\(") , "[" , 1)
+cols <- c("dep","pkg")
+depends <- depends %>% 
+  as.data.frame() %>% 
+  mutate(pkg = db$Package )
+
+colnames(depends) <- cols
+
+library(devtools)
+install_github("cbail/textnets")
+library(textnets)
+library(ggraph)
+```
+
+```{r}
+dep_group <- depends %>% group_by(pkg) %>% slice(1L)
+dep_cloud <- textnets::PrepText(dep_group, groupvar = "pkg", textvar = "dep", node_type = "groups", tokenizer = "words", pos = "nouns", remove_stop_words = TRUE, compound_nouns = TRUE)
+
+dep_text_network <- CreateTextnet(dep_cloud)
+
+VisTextNet(dep_text_network)
+
+
+```
+```{r}
+# cleaning data 
+
+# identify bot downloads 
+
+bot_2014 <- spilk_2014 %>% 
+  group_by(country,ip_id,package,r_version,size) %>% 
+  count()
+
+bot_2018 <- spilk_2018 %>% 
+  group_by(country,ip_id,package,r_version,size,time) %>% 
+  count()
+
+
+entries_2012_1001_dir <- download_RStudio_CRAN_data(START = '2012-10-01',END = '2012-10-01', log_folder="/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/paper/Data")
+
+# read .gz compressed files form local directory
+entries_2012_1001 <- read.csv("~/Documents/GitHub/paper-cran-category-classification/paper/Data/2014-11-17.csv.gz")
+
+
+bot_2012_1001 <- entries_2012_1001 %>% 
+  group_by(country,ip_id,package,r_version,size) %>% 
+  count()
+
+
+
+entries_2012_1002_dir <- download_RStudio_CRAN_data(START = '2012-10-02',END = '2012-10-02', log_folder="/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/paper/Data")
+
+# read .gz compressed files form local directory
+entries_2012_1002 <- read.csv("~/Documents/GitHub/paper-cran-category-classification/paper/Data/2012-10-02.csv.gz")
+
+
+bot_2012_1002 <- entries_2012_1002 %>% 
+  group_by(country,ip_id,package,r_version,size) %>% 
+  count()
+
+entries_2021_0701_dir <- download_RStudio_CRAN_data(START = '2021-07-01',END = '2021-07-01', log_folder="/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/paper/Data")
+
+# read .gz compressed files form local directory
+entries_2021_0701 <- read.csv("~/Documents/GitHub/paper-cran-category-classification/paper/Data/2021-07-01.csv.gz")
+
+bot_2021_0701 <- entries_2021_0701 %>% 
+  group_by(country,ip_id,package,r_version,size,time) %>% 
+  count()
+
+
+
 ```
 
