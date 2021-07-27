@@ -4,7 +4,7 @@ output: html_document
 ---
 
 
-```{r all_pkgs}
+```{r setup}
 library(tidyverse)
 library(lubridate)
 library(rvest)
@@ -15,14 +15,15 @@ library(ggplot2)
 library(feasts)
 library(cranlogs)
 library(stringr)
-library(installr)
+#library(installr)
 library(plotly)
 library(scales)
 library(lubridate)
-
+knitr::opts_chunk$set(cache = TRUE,
+                      cache.path = "cache/")
 ```
 
-```{r}
+```{r pkg-info}
 url <- "http://cran.rstudio.com/web/packages/packages.rds"
 db <- readRDS(url(url)) %>% 
   as.data.frame()%>% 
@@ -32,49 +33,22 @@ db <- readRDS(url(url)) %>%
 ```
 
 
-```{r remove-same-authors}
-n_pkgs <-nrow(db)
-author<-distinct(db,Author,.keep_all= TRUE)
-nrow(author)
+```{r db-format}
+n_pkgs <- nrow(db)
 
-nonr_author<-sapply(strsplit(as.character(author$Author), " \\(") , "[" , 1) 
+dbl <- db %>% 
+  # remove [aut,...], <mail>, or (...), etc
+  mutate(author = str_remove_all(Author, "(\\[.+\\]|\\<.+\\>|\\(.+\\))")) %>% 
+  separate_rows(author, sep = ",") %>% 
+  mutate(author = str_squish(author))
 
-#getting all the RStudio copyright ownership
-rstudio<- str_detect(author$Author, "RStudio") %>% 
-  sum(na.rm = TRUE)
-
-
-# non-RStudio ownership
-pkg_rstusio <- db %>%
-  filter(grepl('RStudio', Author)) %>%
-  select(Package) 
-
-
-# filter the packages whose author is from R core group
-pkg_core <- db %>%
-  filter(grepl('Douglas Bates|John Chambers|Peter Dalgaard|Robert Gentleman|Kurt Hornik|Ross Ihaka|Tomas Kalibera|Michael Lawrence|Friedrich Leisch|Uwe Ligges|Thomas Lumley|Martin Maechler|Martin Morgan|Paul Murrell|Brian Ripley|Deepayan Sarkar|Duncan Temple Lang|Luke Tierney|Simon Urbanek|Martyn Plummer|', Author)) %>%
-  select(Package)
-
-# filter the packages whose author is on R secondary group
-pkg_secondary <- db %>%
-  filter(!grepl('Guido Masarotto|Duncan Murdoch|Henrik Bengtsson|Roger Bivand|Ben Bolker|David Brahm|Vince Carey|Saikat DebRoy|Matt Dowle|Dirk Eddelbuettel|Claus Ekstrom|John Fox|Paul Gilbert|Yu Gong|Gabor Grothendieck|Frank E Harrell Jr|Peter M. Haverty|Torsten Hothorn|Robert King|Kjetil Kjernsmo|Roger Koenker|Philippe Lambert|Jan de Leeuw|Jim Lindsey|Patrick Lindsey|Catherine Loader| Gordon Maclean|Arni Magnusson|John Maindonald|David Meyer|Ei-ji Nakama|Jens Oehlschägel|Steve Oncley|Richard O’Keefe|Hubert Palme|Roger D. Peng|José C. Pinheiro|Tony Plate|Anthony Rossini| Jonathan Rougier|Petr Savicky|Günther Sawitzki|Marc Schwartz|Arun Srinivasan|Detlef Steuer|Bill Simpson|Gordon Smyth|Adrian Trapletti|Terry Therneau|Rolf Turner|Bill Venables|Gregory R. Warnes| Andreas Weingessel|Morten Welinder|James Wettenhall|Simon Wood|and Achim Zeileis', Author)) %>%
-  select(Package) 
-
-
-pkg_r_related <- db %>%
-  filter(stringr::str_detect(Author, 'Hadley Wickham|Yihui Xie|Gabor Csardi|Winston Chang|Andrie de Vries|Alison Presmanes Hill|Mara Averick|Cole Arendt|Daniel Falbel|Garrick Aden-Buie|Garrett Grolemund|Gary|Joe Cheng|Jennifer (Jenny) Bryan|Jim Hester|J.J. Allaire|Jonathan|Joshua Spiewak|Dan Buch|Richard Iannone|Ralf Stubner|Tyler Finethy|Melissa Barca|Kevin Ushey|Javier Luraschi|Karl Feinauer|Charles Teague|Maria Semple|adamconroy|Ricardo Andrade|Steve Nolen|Randy Lai|Jeffrey Horner|Jan Marvin Garbuszus|Justace Clutter|Josh Paulson|Mike Bessuille|Jeffrey Arnold|Paul Kaefer|Jim Hester|Dirk Schumacher|
-Philipp A.|Fabian Mundt|Fabian Mundt|boB Rudis|Asher|Henrik Bengtsson|James Lamb|rich-rstudio|Andrie de Vries|Iñaki Ucar|Mark Brown|Hiroaki Yutani|Dean Attali|Matthias Mailänder|Bruno Tremblay|Ian|John Blischak|Chris von Csefalvay|Jeroen Ooms|
-Daniel Gromer|Kirill Müller|Jan Gleixner|Alexander Grueneberg|Darío Hereñú|Aron Atkins|harupiko|Barret Schloerke|James Arnold|Giuseppe Casalicchio|Fredric Johansson|Curtis Kephart|reudismam|Jeff Allen|Yuri Niyazov|Sean Kross|Carl A. B. Pearson|
-Peter Glerup Ericson|Diomidis Spinellis|Paul Menzel|Lincoln Mullen|Colin Gillespie|Masafumi Okada|Øystein Sørensen|Matthew Grogan|Scott Kostyshak|Marcus Kinsella|rhinopotamus|Daiki Katsuragawa|Michael Steinbaugh|Jari Karppinen|Roy Storey|Kristofer Rye|Erin|Ben Torvaney|Pol Mesalles|Sainath Adapa|Vladimir Panfilov|Christian Brueffer|Julien Barnier|') )%>%
-  select(Package) 
-
-
+db_rstudio <- db %>% 
+  filter(str_detect(tolower(Author), "rstudio"))
 ```
 
 
 An alternative way to get the CRAN R-package names.
 ```{r cran-names}
-library(available)
 cran_names <- rownames(available:::available_packages(repos = available:::default_cran_repos))
 ```
 
@@ -104,10 +78,6 @@ total_downloads %>%
   geom_smooth(aes(date, count),stat = "smooth") 
 ```
 
-
-
-
-```{r  2014-11-17}
 ```{r , cache=TRUE, message=FALSE,  results=FALSE, warning=FALSE, comment=FALSE}
 #spilk_2014_dir <- download_RStudio_CRAN_data(START = '2014-11-17',END = '2014-11-17', log_folder="/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/paper/Data")
 
