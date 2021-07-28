@@ -690,3 +690,26 @@ bot_2021_0701 <- entries_2021_0701 %>%
 
 ```
 
+```{r cleaning-scrip}
+
+# downloading all the avaiable data 
+
+mydownload <- function (start_date, end_date) {
+  start_date <- as.Date(start_date)  ## convert to Date object
+  end_date <- as.Date(end_date)  ## convert to Date object
+  dates <- as.Date("1970/01/01") + (start_date : end_date)  ## date sequence
+  ## a loop to download data
+  for (i in 1:length(dates)) {
+    string_date <- as.character(dates[i])
+    myfile <- download_RStudio_CRAN_data(START = 'string_date',END = 'string_date', log_folder="/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/paper/Data")
+    string_date <- gsub("-", "/", string_date)  ## replace "-" with "/"
+    download.file(url = myurl, destfile = myfile, quiet = TRUE)
+    }
+  }
+
+mydownload("2013/01/01", "2013/02/28")
+
+
+
+```
+
