@@ -33,7 +33,7 @@ n_pkgs <- nrow(db)
 
 dbl <- db %>% 
   # remove [aut,...], <mail>, or (...), etc
-  mutate(author = str_remove_all(Author, "(\\[.+\\]|\\<.+\\>|\\(.+\\))")) %>% 
+  mutate(author = str_remove_all(Author,                                 "(\\[.+\\]|\\<.+\\>|\\(.+\\))")) %>% 
   separate_rows(author, sep = ",") %>% 
   mutate(author = str_squish(author))
 
@@ -69,7 +69,7 @@ total_downloads$count[total_downloads$count == 0] <- 21959
 
 
 total_downloads %>%
-  ggplot()  + geom_line(aes(date, count))+
+  ggplot() + geom_line(aes(date, count))+
   geom_smooth(aes(date, count),stat = "smooth") 
 ```
 
@@ -87,15 +87,15 @@ country_2014 <- spilk_2014 %>%
   group_by(country) %>% 
   count()
 
-ID_2014 <- spilk_2014 %>%  
-  group_by(country,ip_id) %>% 
+ID_2014 <- spilk_2014 %>%
+  group_by(country, ip_id) %>%
   count()
 
-pkg_ID_2014 <- spilk_2014 %>%  
-  group_by(country,ip_id,package) %>% 
+pkg_ID_2014 <- spilk_2014 %>%
+  group_by(country, ip_id, package) %>%
   count()
 
-ido <- max(ID_2014$n)/sum(ID_2014$n)
+ido <- max(ID_2014$n) / sum(ID_2014$n)
 
 
 download_141116 <-total_downloads %>% 
