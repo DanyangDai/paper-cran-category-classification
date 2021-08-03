@@ -1,0 +1,188 @@
+---
+title: "Cranlog analysis"
+author: "Danyang Dai"
+date: "03/08/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+library(rvest)
+library(glue)
+library(feasts)
+library(cranlogs)
+library(plotly)
+library(scales)
+library(lubridate)
+```
+
+```{r , cache=TRUE, message=FALSE,  results=FALSE, warning=FALSE, comment=FALSE}
+
+load(here::here("data/derived/spilk_2014.RData"))
+load(here::here("data/derived/total_downloads.RData"))
+
+country_2014 <- spilk_2014 %>%
+  group_by(country) %>%
+  count()
+
+ID_2014 <- spilk_2014 %>%
+  group_by(country, ip_id) %>%
+  count()
+
+pkg_ID_2014 <- spilk_2014 %>%
+  group_by(country, ip_id, package) %>%
+  count()
+
+ido <- max(ID_2014$n) / sum(ID_2014$n)
+
+
+download_141116 <- total_downloads %>%
+  filter(date == "2014-11-16")
+
+download_141118 <- total_downloads %>%
+  filter(date == "2014-11-18")
+
+
+spilk_2014 %>%
+  mutate(obsid = paste(country, ip_id, package)) %>%
+  pull(obsid) %>%
+  n_distinct()
+
+```
+
+```{r, cache=TRUE, message=FALSE,  results=FALSE, warning=FALSE, comment=FALSE}
+load(here::here("data/derived/spilk_2018.RData"))
+
+country_2018 <- spilk_2018 %>%
+  group_by(country) %>%
+  count()
+
+ID_2018 <- spilk_2018 %>%
+  group_by(country, ip_id) %>%
+  count()
+
+pkg_ID_18 <- spilk_2018 %>%
+  group_by(country, ip_id, package) %>%
+  count()
+
+
+top15 <- pkg_ID_18[pkg_ID_18$n %in% tail(sort(pkg_ID_18$n), 15), ]
+
+us_18 <- top15 %>%
+  group_by(country, package) %>%
+  summarise(n = sum(n))
+
+```
+
+Testing whether the package rank could remove the bots download: 
+
+```{r}
+library(packageRank)
+packageLog(package = "forecast", date = "2015-10-20")[8:14, -(4:6)]
+tidyverse_2018 <- packageLog(package = "tidyverse", date = "2018-10-21")
+filteredDownloads(package = "forecast", date = "2018-10-21")
+filteredDownloads(package = "cholera", date = "2020-07-31")
+
+```
+
+It takes very long to run and did not get ideal results. For more information: <https://github.com/lindbrook/packageRank>
+
+
+Trying to download the number of downloads for each pacakge in the past week, failed to do so. 
+```{r}
+library(cranlogs)
+library(purrr)
+
+n_package <- first_release %>%
+  group_by(Date) %>%
+  summarise(n = n_distinct(Package))
+
+download_1 <- cran_downloads(packages = c(cran_names[1:100]), when = "last-week")
+download_2 <- cran_downloads(packages = c(cran_names[101:200]), when = "last-week")
+download_3 <- cran_downloads(packages = c(cran_names[201:300]), when = "last-week")
+
+datalist <- list()
+
+for (i in 26:175) {
+  Sys.sleep(sample(1:10))
+  download <- cran_downloads(packages = c(cran_names[((i - 1) * 100 + 1):i * 100]), when = "last-week")
+  datalist[[i]] <- download # add it to your list
+}
+
+
+```
+
+
+```{r}
+
+# identify bot downloads 
+
+bot_2014 <- spilk_2014 %>%
+  group_by(country, ip_id, package, r_version, size) %>%
+  count()
+
+bot_2018 <- spilk_2018 %>%
+  group_by(country, ip_id, package, r_version, size, time) %>%
+  count()
+
+
+entries_2012_1001_dir <- download_RStudio_CRAN_data(START = "2012-10-01", END = "2012-10-01", log_folder = "/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/paper/Data")
+
+# read .gz compressed files form local directory
+entries_2012_1001 <- read.csv("~/Documents/GitHub/paper-cran-category-classification/paper/Data/2014-11-17.csv.gz")
+
+
+bot_2012_1001 <- entries_2012_1001 %>%
+  group_by(country, ip_id, package, r_version, size) %>%
+  count()
+
+
+
+entries_2012_1002_dir <- download_RStudio_CRAN_data(START = "2012-10-02", END = "2012-10-02", log_folder = "/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/paper/Data")
+
+# read .gz compressed files form local directory
+entries_2012_1002 <- read.csv("~/Documents/GitHub/paper-cran-category-classification/paper/Data/2012-10-02.csv.gz")
+
+
+bot_2012_1002 <- entries_2012_1002 %>%
+  group_by(country, ip_id, package, r_version, size) %>%
+  count()
+
+entries_2021_0701_dir <- download_RStudio_CRAN_data(START = "2021-07-01", END = "2021-07-01", log_folder = "/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/paper/Data")
+
+# read .gz compressed files form local directory
+entries_2021_0701 <- read.csv("~/Documents/GitHub/paper-cran-category-classification/paper/Data/2021-07-01.csv.gz")
+
+bot_2021_0701 <- entries_2021_0701 %>%
+  group_by(country, ip_id, package, r_version, size, time) %>%
+  count()
+
+```
+
+
+
+
+```{r cleaning-scrip}
+
+# downloading all the avaiable data
+
+mydownload <- function(start_date, end_date) {
+  start_date <- as.Date(start_date) ## convert to Date object
+  end_date <- as.Date(end_date) ## convert to Date object
+  dates <- as.Date("1970/01/01") + (start_date:end_date) ## date sequence
+  ## a loop to download data
+  for (i in 1:length(dates)) {
+    string_date <- as.character(dates[i])
+    myfile <- download_RStudio_CRAN_data(START = "string_date", END = "string_date", log_folder = "/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/paper/Data")
+    string_date <- gsub("-", "/", string_date) ## replace "-" with "/"
+    download.file(url = myurl, destfile = myfile, quiet = TRUE)
+  }
+}
+
+mydownload("2013/01/01", "2013/02/28")
+
+
+```
+

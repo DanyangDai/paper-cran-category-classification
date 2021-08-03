@@ -1,0 +1,419 @@
+---
+title: Package downloads analysis 
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+library(rvest)
+library(glue)
+library(feasts)
+library(cranlogs)
+library(plotly)
+library(scales)
+library(lubridate)
+
+```
+
+remove missing data and replace it with the closest date figure 
+```{r total_download}
+load(here::here("data/derived/total_downloads.RData"))
+
+# replace missing values with the nearest number 
+total_downloads$count[total_downloads$count == 0] <- 21959
+
+total_downloads %>%
+  ggplot() + geom_line(aes(date, count))+
+  geom_smooth(aes(date, count),stat = "smooth") 
+
+```
+
+Does R related conferences affect the total R packages downloads?
+
+```{r conferences-dates}
+# adding the userR conference date
+conference_dates <- tribble(
+  ~name, ~date,
+  "UseR", "2004-05-20",
+  "UseR", "2006-06-15",
+  "UseR", "2007-08-08",
+  "UseR", "2008-08-14",
+  "UseR", "2009-07-08",
+  "UseR", "2010-07-20",
+  "UseR", "2011-08-16",
+  "UseR", "2012-06-12",
+  "UseR", "2013-06-10",
+  "UseR", "2014-06-30",
+  "UseR", "2015-06-30",
+  "UseR", "2016-06-27",
+  "UseR", "2017-07-04",
+  "UseR", "2018-07-10",
+  "UseR", "2019-07-09",
+  "UseR", "2020-07-07",
+  "UseR", "2021-07-05",
+  "RStudio", "2017-01-11",
+  "RStudio", "2018-01-31",
+  "RStudio", "2019-01-15",
+  "RStudio", "2020-01-27",
+  "RStudio", "2021-03-03",
+)
+
+UseR <- dplyr::filter(conference_dates, name == "UseR", date > "2013-01-01")
+Rstudio <- dplyr::filter(conference_dates, name == "RStudio")
+
+download_user <- total_downloads %>%
+  ggplot() +
+  geom_line(aes(date, count)) +
+  geom_vline(
+    xintercept = as.numeric(as.Date(UseR$date)), linetype = "dotted",
+    color = "blue", size = 0.1
+  ) +
+  geom_vline(
+    xintercept = as.numeric(as.Date(Rstudio$date)), linetype = "dotted",
+    color = "red", size = 0.1
+  )
+
+ggplotly(download_user, dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+```
+
+Does working days have an effect on the R packages downloads?
+
+```{r working-day-effect}
+# working days effect 
+total_downloads %>% 
+  as_tsibble(index = date) %>% 
+  gg_subseries(count,period = "week")
+```
+
+Does American academic calendar effect number of R packages downloads? 
+
+```{r}
+
+```
+
+
+```{r STL}
+# STL decomposition of total R package downloads
+total_downloads %>%
+  as_tsibble(index = date) %>%
+  model(
+    STL(log(count + 1) ~ trend(window = 77) +
+      season("week", window = "periodic"))
+  ) %>%
+  components() %>%
+  autoplot() +
+  geom_vline(xintercept = as.numeric(as.Date(UseR$date)), linetype = "dotted", color = "blue", size = 0.1) +
+  geom_vline(xintercept = as.numeric(as.Date(Rstudio$date)), linetype = "dotted", color = "red", size = 0.1)
+
+```
+
+
+
+
+R packages download and updates analysis: 
+
+```{r updates-data}
+load(here::here("data/derived/updates.Rdata"))
+load(here::here("data/derived/updates_2.Rdata"))
+load(here::here("data/derived/updates_3.Rdata"))
+load(here::here("data/derived/updates_4.Rdata"))
+load(here::here("data/derived/updates_5.Rdata"))
+load(here::here("data/derived/updates_6.Rdata"))
+load(here::here("data/derived/updates_7.Rdata"))
+load(here::here("data/derived/updates_8.Rdata"))
+load(here::here("data/derived/updates_9.Rdata"))
+
+updates_list <- list(updates, updates_2, updates_3, updates_4, updates_5, updates_6, updates_7, updates_8, updates_9)
+updates_select <- map_dfr(updates_list, select_pkg_ver_date)
+
+updates_select <- updates_select %>%
+  mutate(Date = as.Date(updates_select$date))
+```
+
+
+```{r }
+### No. of packages on CRAN before RStudio came along
+nrow(updates_select %>%
+  group_by(Package) %>%
+  filter(Date <= "2016-11-01") %>%
+  filter(Version == max(Version)))
+
+
+### No. of packages on CRAN after RStudio came along
+
+nrow(updates_select %>%
+  group_by(Package) %>%
+  filter(Date >= "2016-11-01") %>%
+  filter(Version == max(Version)))
+
+### Updates summaries statistics 
+update_freq <- updates_select %>% 
+  group_by(Package) %>% 
+  arrange(Date) %>%
+  mutate(diff = c(NA,diff(Date)))
+
+update_avg <- update_freq %>% 
+  select(Package,diff) %>% 
+  na.omit() %>% 
+  group_by(Package) %>%
+  summarise(avg=mean(diff))
+
+ updates_select%>% 
+  filter(Package=="Ecdat")
+
+summary(update_freq$diff)
+```
+
+```{r}
+# Select top 10 packages from last month 
+
+top_downloads <- cran_top_downloads("last-month")
+
+updates_top <- updates_select %>%
+  filter(Package %in% top_downloads$package) %>%
+  filter(Date >= as.Date("2013-01-01"))
+
+
+downloads_top <- cran_downloads(from = "2013-01-01", to = "2021-07-05", package = top_downloads$package)
+
+downloads_top %>%
+  ggplot() +
+  geom_line(aes(date, count, col = package))
+  
+
+```
+
+
+```{r}
+# updates and ggplot2 downloads pattern 
+
+ggplot2 <- downloads_top %>%
+  filter(package == "ggplot2") %>%
+  ggplot() +
+  geom_line(aes(date, count)) +
+  geom_vline(
+    xintercept = updates_top$Date, linetype = "dotted", color = "red",
+    size = 0.1
+  )
+
+ggplotly(ggplot2, dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+```
+```{r}
+# STL decomposition on ggplot 
+STL_ggplot <- downloads_top %>%
+  filter(package == "ggplot2") %>%
+  as_tsibble(index = date) %>%
+  model(
+    STL(log(count + 1) ~ trend(window = NULL) +
+      season("week", window = "periodic"))
+  ) %>%
+  components() %>%
+  autoplot() +
+  geom_vline(xintercept = updates_top$Date, linetype = "dotted", color = "blue", size = 0.1)
+
+ggplotly(STL_ggplot, dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+```
+
+```{r}
+# updates and dplyr downloads pattern 
+
+dplyr <- downloads_top %>%
+  filter(package == "dplyr") %>%
+  ggplot() +
+  geom_line(aes(date, count)) +
+  geom_vline(
+    xintercept = updates_top$Date, linetype = "dotted", color = "red",
+    size = 0.1
+  )
+
+ggplotly(dplyr, dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+```
+
+
+
+
+```{r}
+# non-RStudio packages updates
+
+updates_forecast <- updates_select %>%
+  filter(Package == "forecast") %>%
+  filter(Date >= as.Date("2012-10-29"))
+
+
+forecast_download <- cran_downloads(packages = "forecast", from = "2012-10-29", to = "2021-07-12")
+
+forecast <- forecast_download %>%
+  ggplot() +
+  geom_line(aes(date, count)) +
+  geom_vline(xintercept = updates_forecast$Date, linetype = "dotted", color = "red", size = 0.1) +
+  scale_x_date(limits = as.Date(c("2012-10-29", "2021-07-12")))
+
+ggplotly(forecast, dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+
+```
+
+
+```{r}
+#STL decompostion to forecast package downloads 
+STL_forecast <- forecast_download %>%
+  as_tsibble(index = date) %>%
+  model(
+    STL(log(count + 1) ~ trend(window = NULL) +
+      season("week", window = "periodic"))
+  ) %>%
+  components() %>%
+  autoplot() +
+  geom_vline(xintercept = updates_forecast$Date, linetype = "dotted", color = "blue", size = 0.1)
+
+ggplotly(STL_forecast, dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+
+```
+
+
+
+Number of pacakges being released per day: 
+
+```{r}
+first_release <- updates_select %>% 
+  group_by(Package) %>% 
+  filter(Date == min(Date))
+
+first_release %>%
+  group_by(Date) %>%
+  summarise(n = n_distinct(Package)) %>%
+  ggplot()  + geom_line(aes(Date, n))+
+  geom_smooth(aes(Date, n),stat = "smooth")
+
+
+```
+
+
+```{r}
+
+#getting the top 100 downloads for last month 
+
+download_top100 <- get_downloads(when = "last-month")
+
+top_100 <- db %>%
+  mutate(Package = as.character(Package)) %>%
+  filter(Package %in% download_top100$package) %>%
+  filter(!grepl("RStudio", Author)) %>%
+  select(Package)
+
+# Non RStudio downloads
+top_nonrstudio <- download_top100 %>%
+  filter(package %in% top_100$Package)
+
+
+updates_jsonlite <- updates_select %>%
+  filter(Package == "jsonlite") %>%
+  filter(Date >= as.Date("2012-10-29"))
+
+# Non RStudio downloads
+top_nonrstudio <- download_top100 %>%
+  filter(package %in% top_100$Package)
+
+
+```
+
+package updates effect to non-RStudio own popular packages 
+
+```{r }
+# package updates on jsonlite
+updates_jsonlite <- updates_select %>%
+  filter(Package == "jsonlite") %>%
+  filter(Date >= as.Date("2012-10-29"))
+
+
+jsonlite_download <- cran_downloads(packages = "jsonlite", from = "2013-12-04", to = "2021-07-12")
+
+jsonlite <- jsonlite_download %>%
+  ggplot() +
+  geom_line(aes(date, count)) +
+  geom_vline(xintercept = updates_jsonlite$Date, linetype = "dotted", color = "red", size = 0.1) +
+  scale_x_date(limits = as.Date(c("2013-12-04", "2021-07-12")))
+
+ggplotly(jsonlite, dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+
+```
+
+
+```{r}
+# package updates on glue
+updates_glue <- updates_select %>%
+  filter(Package == "glue") %>%
+  filter(Date >= as.Date("2012-10-29"))
+
+
+glue_download <- cran_downloads(packages = "glue", from = "2017-04-17", to = "2021-07-12")
+
+glue <- glue_download %>%
+  ggplot() +
+  geom_line(aes(date, count)) +
+  geom_vline(xintercept = updates_glue$Date, linetype = "dotted", color = "red", size = 0.1) +
+  scale_x_date(limits = as.Date(c("2017-04-17", "2021-07-12")))
+
+ggplotly(glue, dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+```
+
+Selecting packages that have more than 1 updates 
+
+```{r}
+updates_select %>%
+  group_by(Package) %>%
+  summarise(n = n(), last = max(Date)) %>%
+  filter(n > 2) %>%
+  arrange(desc(n))
+```
+
+
+How to get the package updates (Alternative way):
+
+```{r pkg-updates}
+pkg_url <- "https://cran.r-project.org/web/packages/{pkg}/index.html"
+pkg_archive <- "https://cran.r-project.org/src/contrib/Archive/{pkg}/"
+
+pkgs_of_interest <- doe_pkgs[1:4]
+pkg_updates <- map(pkgs_of_interest, function(pkg) {
+    last_update <- read_html(glue(pkg_url)) %>% 
+      html_table() %>% 
+      .[[1]] %>% 
+      filter(X1=="Published:") %>% 
+      pull(X2) %>% 
+      ymd()
+      
+    archive_dates <- tryCatch({ 
+        read_html(glue(pkg_archive)) %>% 
+          html_table() %>%
+          .[[1]] %>% 
+          pull(`Last modified`) %>% 
+          ymd_hm() %>% 
+          na.omit() %>% 
+          as.Date()
+      }, error = function(e) {
+        NULL
+      })
+    c(archive_dates, last_update)
+  })
+names(pkg_updates) <- pkgs_of_interest
+
+updates <- unlist(pkg_updates) %>% 
+  enframe("package", "update") %>% 
+  # unlist converts date to integers
+  mutate(update = as.Date(update, origin = "1970-01-01"),
+         # need to get rid of the numbers appended to pkg names
+         package = str_extract(package, paste0(pkgs_of_interest, collapse="|"))) 
+
+updates
+```
+

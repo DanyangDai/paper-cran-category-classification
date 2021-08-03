@@ -1,0 +1,38 @@
+---
+title: "Dependency analysis"
+author: "Danyang Dai"
+date: "03/08/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#library(devtools)
+#install_github("cbail/textnets")
+library(textnets)
+library(ggraph)
+```
+
+
+```{r}
+# dependency analysis
+depends <- sapply(strsplit(as.character(db$Depends), " \\("), "[", 1)
+cols <- c("dep", "pkg")
+depends <- depends %>%
+  as.data.frame() %>%
+  mutate(pkg = db$Package)
+
+colnames(depends) <- cols
+```
+
+```{r}
+dep_group <- depends %>%
+  group_by(pkg) %>%
+  slice(1L)
+dep_cloud <- textnets::PrepText(dep_group, groupvar = "pkg", textvar = "dep", node_type = "groups", tokenizer = "words", pos = "nouns", remove_stop_words = TRUE, compound_nouns = TRUE)
+
+dep_text_network <- CreateTextnet(dep_cloud)
+
+VisTextNet(dep_text_network)
+
+```
