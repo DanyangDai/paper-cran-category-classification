@@ -81,6 +81,37 @@ save(spilk_2018, file = "Data/derived/spilk_2018.RData")
 
 #download 159 sampling data from 2012-10-01 to 2021-07-31
 
+#Sampling a day in every month 
+library(purrr)
+
+start_date <- as.Date(seq(as.Date("2012-10-01"),length=106,by="months"))
+end_date <- as.Date(seq(as.Date("2012-11-01"),length=106,by="months")-1)
+time_frame <- data.frame(start = start_date,
+                         end = end_date)
+
+
+sample_date <- time_frame %>%
+  rowwise() %>%
+  mutate(random_date = sample(x = seq(from = start,
+                                      to = end,
+                                      by = "day"),
+                              size = 1))
+
+#sampling a day in every 2 months 
+start_date_2 <- as.Date(seq(as.Date("2012-10-01"),length=53,by="2 months"))
+end_date_2 <- as.Date(seq(as.Date("2012-11-01"),length=53,by="2 months")-1)
+time_frame_2 <- data.frame(start = start_date_2,
+                           end = end_date_2)
+
+sample_date_2 <- time_frame_2 %>%
+  rowwise() %>%
+  mutate(random_date = sample(x = seq(from = start,
+                                      to = end,
+                                      by = "day"),
+                              size = 1))
+
+sampling_dates <-  as.Date(sort(c(sample_date$random_date,sample_date_2$random_date)))
+
 
 for (i in 1:159){
   date <- paste0(sampling_dates[i])
