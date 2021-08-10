@@ -3,6 +3,9 @@ title: Extracting package information
 output: html_document
 ---
 
+```{r}
+library(tidyverse)
+```
 
 ```{r setup}
 library(tidyverse)
@@ -68,6 +71,10 @@ To get the list of packages for a particular CRAN task view:
 doe_pkgs <- ctv:::.get_pkgs_from_ctv_or_repos("ExperimentalDesign", 
                                               repos = "http://cran.rstudio.com/")[[1]]
 survey_pkgs <- ctv:::.get_pkgs_from_ctv_or_repos("OfficialStatistics", 
+                                              repos = "http://cran.rstudio.com/")[[1]]
+bayesian_pkgs <- ctv:::.get_pkgs_from_ctv_or_repos("Bayesian", 
+                                              repos = "http://cran.rstudio.com/")[[1]]
+ChemPhys_pkgs <- ctv:::.get_pkgs_from_ctv_or_repos("ChemPhys", 
                                               repos = "http://cran.rstudio.com/")[[1]]
 
 ```
