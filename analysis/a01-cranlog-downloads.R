@@ -56,7 +56,7 @@ library(installr)
 spilk_2014_dir <-
   download_RStudio_CRAN_data(START = '2014-11-17',
                              END = '2014-11-17',
-                             log_folder = "/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/paper/Data/derived")
+                             log_folder = "/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/data/derived")
 # read .gz compressed files form local directory
 spilk_2014 <-
   read.csv(
@@ -79,7 +79,21 @@ save(spilk_2018, file = "Data/derived/spilk_2018.RData")
 
 
 
+#download 159 sampling data from 2012-10-01 to 2021-07-31
 
 
+for (i in 1:159){
+  date <- paste0(sampling_dates[i])
+  dir <-  download_RStudio_CRAN_data(START = sampling_dates[i],
+                                        END = sampling_dates[i],
+                                        log_folder = "/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/data/derived/")
+  data <- read_RStudio_CRAN_data(
+  paste0("~/Documents/GitHub/paper-cran-category-classification/data/derived/",sampling_dates[i],".csv.gz"))
+  save(data, file = paste0("~/Documents/GitHub/paper-cran-category-classification/data/derived/",sampling_dates[i],".RData"))
+  }
 
+csv_files <- list.files(path = "../data/derived", pattern="\\.csv\\.gz$",
+                        full.names = TRUE) 
 
+# myfiles <- lapply(csv_files, read_csv)
+dt <- read_csv(csv_files, id = "file")
