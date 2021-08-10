@@ -21,3 +21,15 @@ version provided: `arxiv` and `rjournal`. Knit the file
 `paper/arxiv/arxiv.Rmd` to get the PDF and tex file ready for submission
 to arxiv. Knit the file `paper/rjournal/paper-rjournal.Rmd` to get the
 PDF ready for submission to R Journal.
+
+The data explored in this sample analysis are randomly selected. From
+2012-10-01 to 2021-07-31, there are in total 159 cranlog file selected
+for this analysis. In order to provide a representative sample, there is
+one date being randomly selected for every month of the year and then
+every two months of the year. Thus, there are 18 days selected in each
+year (from 2013 to 2020). The random dates generation process can be
+find in the `analysis/a01-cranlog-downloads.R` scrip. As the data file
+can be quite large, the data files are not uploaded in this Github
+repository. If you are interested in the data and results, feel free to
+use the `analysis/a01-cranlog-downloads.R` for the selecting and
+downloading the data from <http://cran-logs.rstudio.com>.
