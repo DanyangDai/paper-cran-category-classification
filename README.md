@@ -23,7 +23,7 @@ to arxiv. Knit the file `paper/rjournal/paper-rjournal.Rmd` to get the
 PDF ready for submission to R Journal.
 
 The data explored in this sample analysis are randomly selected. From
-2012-10-01 to 2021-07-31, there are in total 159 cranlog file selected
+2012-10-01 to 2021-07-31, there are in total 159 cranlog files selected
 for this analysis. In order to provide a representative sample, there is
 one date being randomly selected for every month of the year and then
 every two months of the year. Thus, there are 18 days selected in each
