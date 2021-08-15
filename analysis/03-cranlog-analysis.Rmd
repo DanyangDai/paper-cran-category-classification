@@ -164,25 +164,17 @@ bot_2021_0701 <- entries_2021_0701 %>%
 
 
 
+```{r}
 
-
-
-```{r, cache=TRUE}
-csv_files <- list.files(path = "data/derived", pattern="\\.csv\\.gz$",
+csv_files <- list.files(path = "../data/derived", pattern="\\.csv\\.gz$",
                         full.names = TRUE) 
 
-data_12<- read_csv(head(csv_files, 5), id = "file")
+csv_files_path <- str_remove(csv_files,pattern = "../")
 
-process_data <- function(file) {
-  read_csv(file) %>% 
-    count(country, ip_id, package, version, size, date) %>% 
-    write_csv(file.path(dirname(file), "..", "processed", basename(file)))
-}
+data_12<- read_csv(csv_files[grep(csv_files, pattern="2012")], id = "file",col_select = c("date","time","country", "ip_id", "package", "version", "size"))
 
 
 
-
-#csv_files %>% lapply(process_data)
 
 bot_2012 <- data_12 %>% 
   group_by(date,time,country, ip_id, package, version, size) %>%
@@ -190,18 +182,31 @@ bot_2012 <- data_12 %>%
   arrange(desc(n)) 
 
 
+
+
 bot_2012_wotime <- data_12 %>% 
   group_by(date,country, ip_id, package, version, size) %>%
   count()%>% 
   arrange(desc(n)) 
 
+save(bot_2012, file = "../data/derived/bot_2012.Rdata")
+
+save(bot_2012_wotime, file = "../data/derived/bot_2012_wotime.Rdata")
+
+
+`2021-07-04` %>% 
+  filter(package == "ggplot2") %>% 
+  mutate(id = paste(country,ip_id)) %>% 
+  pull(id) %>% 
+  unique() %>% 
+  length()
+ 
 ```
 
 
 
-
 ```{r, cache=TRUE}
-data_13<- read_csv(csv_files[6:23], id = "file")
+data_13<- read_csv(csv_files[grep(csv_files, pattern="2013")], id = "file",col_select = c("date","time","country", "ip_id", "package", "version", "size"))
 
 bot_2013 <- data_13 %>% 
   group_by(date,time,country, ip_id, package, version, size) %>%
@@ -214,11 +219,16 @@ bot_2013_wotime <- data_13 %>%
   count()%>% 
   arrange(desc(n))
 
+save(bot_2013, file = "../data/derived/bot_2013.Rdata")
+
+save(bot_2013_wotime, file = "../data/derived/bot_2013_wotime.Rdata")
+
+
 ```
 
 
 ```{r, cache=TRUE}
-data_14<- read_csv(csv_files[24:41], id = "file")
+data_14<- read_csv(csv_files[grep(csv_files, pattern="2014")], id = "file",col_select = c("date","time","country", "ip_id", "package", "version", "size"))
 
 bot_14 <- data_14 %>% 
   group_by(date,time,country, ip_id, package, version, size) %>%
@@ -231,10 +241,15 @@ bot_14_wotime <- data_14 %>%
   count() %>% 
   arrange(desc(n))
 
+save(bot_14, file = "../data/derived/bot_14.Rdata")
+
+save(bot_14_wotime, file = "../data/derived/bot_2014_wotime.Rdata")
+
+
 ```
 
 ```{r, cache=TRUE}
-data_15<- read_csv(csv_files[42:59], id = "file")
+data_15<- read_csv(csv_files[grep(csv_files, pattern="2015")], id = "file",col_select = c("date","time","country", "ip_id", "package", "version", "size"))
 
 bot_2015 <- data_15 %>% 
   group_by(date,time,country, ip_id, package, version, size) %>%
@@ -247,11 +262,13 @@ bot_2015_wotime <- data_15 %>%
   count() %>% 
   arrange(desc(n))
 
+save(bot_2015, file = "../data/derived/bot_2015.Rdata")
 
+save(bot_2015_wotime, file = "../data/derived/bot_2015_wotime.Rdata")
 ```
 
 ```{r, cache=TRUE}
-data_16<- read_csv(csv_files[62:80], id = "file")
+data_16 <- read_csv(csv_files[grep(csv_files, pattern="2016")], id = "file",col_select = c("date","time","country", "ip_id", "package", "version", "size"))
 
 bot_2016 <- data_16 %>% 
   group_by(date,time,country, ip_id, package, version, size) %>%
@@ -264,10 +281,14 @@ bot_2016_wotime <- data_16 %>%
   count() %>% 
   arrange(desc(n))
 
+
+save(bot_2016, file = "../data/derived/bot_2016.Rdata")
+
+save(bot_2016_wotime, file = "../data/derived/bot_2016_wotime.Rdata")
 ```
 
 ```{r, cache=TRUE}
-data_17<- read_csv(csv_files[81:99], id = "file")
+data_17 <- read_csv(csv_files[grep(csv_files, pattern="2017")], id = "file",col_select = c("date","time","country", "ip_id", "package", "version", "size"))
 
 bot_2017 <- data_17 %>% 
   group_by(date,time,country, ip_id, package, version, size) %>%
@@ -280,5 +301,38 @@ bot_2017_wotime <- data_17 %>%
   count() %>% 
   arrange(desc(n))
 
+```
+
+```{r, cache=TRUE}
+data_18<- read_csv(csv_files[grep(csv_files, pattern="2018")], id = "file",col_select = c("date","time","country", "ip_id", "package", "version", "size"))
+
+bot_2018_whole <- data_18 %>% 
+  group_by(date,time,country, ip_id, package, version, size) %>%
+  count() %>% 
+  arrange(desc(n))
+
+
+bot_2018_wotime <- data_18 %>% 
+  group_by(date,country, ip_id, package, version, size) %>%
+  count() %>% 
+  arrange(desc(n))
+
+```
+
+
+```{r,cache=TRUE}
+
+data_19<- read_csv(csv_files[grep(csv_files, pattern="2019")], id = "file",col_select = c("date","time","country", "ip_id", "package", "version", "size"))
+
+bot_2019_ <- data_19 %>% 
+  group_by(date,time,country, ip_id, package, version, size) %>%
+  count() %>% 
+  arrange(desc(n))
+
+
+bot_2018_wotime <- data_18 %>% 
+  group_by(date,country, ip_id, package, version, size) %>%
+  count() %>% 
+  arrange(desc(n))
 ```
 
