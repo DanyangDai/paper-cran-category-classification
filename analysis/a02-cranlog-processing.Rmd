@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(cranlogs)
 library(purrr)
+library(here)
 ```
 
 
@@ -17,23 +18,21 @@ library(purrr)
 # function that process the cranlog raw data
 # count the number of daily downloads for each unique country, ip_id, package 
 
-
 process_data <- function(file) {
   read_csv(file) %>% 
-    filter(!is.na(package)) %>% 
-    count(country, ip_id, package, version, date) %>% 
+    count(country, ip_id, package, version, date,r_os,r_arch) %>% 
     saveRDS(file.path(dirname(file), "..", "processed",str_replace(basename(file), "[.]csv[.]gz", ".rds")))
 }
 
 # first process all the data, done 
 
-lapply(csv_files,process_data)
+lapply(csv_files[101:159],process_data)
 ```
 
 
 Things to check for the processed data: 
 
-- does the processed data consistant with cranlog data? Need to check the daily total downloads for each package and compare it with cranlog 
+- does the processed data consistent with cranlog data? Need to check the daily total downloads for each package and compare it with cranlog 
 
 - find the daily unique download for each package and compare it with the total download 
 
@@ -64,6 +63,7 @@ total_processed_2012 <- processed_2012 %>%
 # checking the total number of r packages download on the 2012-10-09 
 # problem, can only get the package that we have from the cranlog raw data file, cannnot just get the total daily downloads for each package 
 # problem, when try to use the cran_downloads for all the packges, API limitation applys 
+ filter(!is.na(package)) %>% 
 
 cran_log_20121009 <-cran_downloads(packages = c(`2012-10-09`$package), from = "2012-10-09", to = "2012-10-09")
 cran_log_20121009 <- as_tibble(cran_log_20121009)
@@ -78,6 +78,7 @@ cran_downloads(from = "2012-10-09", to = "2012-10-09")
 
 # only one of the date does not match
 total_processed_2012 %>% 
+  filter(!is.na(package)) %>% 
   group_by(date) %>% 
   summarise(total = sum(total)) %>% 
   left_join(
@@ -95,11 +96,30 @@ total_processed_2012 %>%
     cran_downloads(from = min(dates), to = max(dates)),
     by = "date"
   ) 
+
+
+processed_2012 %>% 
+  mutate(id = paste(country,ip_id,r_os, r_arch)) %>% 
+  group_by(date,package) %>% 
+  #filter(package == "abind",date==as.Date("2012-10-09")) %>% 
+  count(wt = n) %>% 
+  arrange(desc(n))
+
+processed_2012 %>% 
+  count(date,package,id = paste(country,ip_id,r_os, r_arch)) %>% 
+  count(date, package)
+  
+cran_downloads(from = "2012-10-01", to = "2012-10-09")
+
+X2012_12_29_csv <- read_csv("data/derived/2012-12-29.csv.gz")
+
+max(X2012_12_29_csv$time)
+
 ```
 
 There are in total `r r_pkg_20121009` r packaged downloaded from the cranlog raw data file. From the `cranlog` package, using the function `cran_downloads`, there are in total `cran_downloads(from = "2012-10-09", to = "2012-10-09")` r packages downloaded. The reason that there are less r packages download from the `cranlog` package is that in the raw data file, it contains NA value.  After removing the NA value in package column from the raw data, it all adds up.
 
-The date for the 2012 is not matching. The file date and the actuall date is not consistant. After remove all the NA in the processed data, most of the dates are consistent with the cranlog package. However, the data fro `2012-12-26` has a huge gap between the cranlog file raw data and the `cranlog` package data. 
+The date for the 2012 is not matching. The file date and the actuall date is not consistant. After remove all the NA in the processed data, most of the dates are consistent with the cranlog package. However, the data fro `2012-12-26` has a huge gap between the cranlog file raw data and the `cranlog` package data. From the raw data file, there are only `r nrow(X2012_12_29_csv)` entries on that day. Double check with the raw data on the `2012-12-26`, it includes 24 hours of entries. 
 
 
 ```{r}
@@ -131,6 +151,7 @@ total_processed_2013 <- processed_2013 %>%
 
 
 total_processed_2013 %>% 
+  filter(!is.na(package)) %>% 
   group_by(date) %>% 
   summarise(total = sum(total)) %>% 
   left_join(
@@ -138,6 +159,18 @@ total_processed_2013 %>%
     by = "date"
   ) %>% 
   count(count == total)
+
+
+processed_2013 %>% 
+  mutate(id = paste(country,ip_id,r_os, r_arch)) %>% 
+  group_by(date,package) %>% 
+  #filter(package == "abind",date==as.Date("2012-10-09")) %>% 
+  count(wt = n) 
+
+processed_2013 %>% 
+  mutate(bot = count(wt = n)) %>% 
+  count(date,package,id = paste(country,ip_id,r_os, r_arch)) %>% 
+  count(date, package) %>% 
 
 ```
 2013 data is consistent with cranlog data.
@@ -154,6 +187,7 @@ total_processed_2014 <- processed_2014 %>%
 
 
 total_processed_2014 %>% 
+  filter(!is.na(package)) %>% 
   group_by(date) %>% 
   summarise(total = sum(total)) %>% 
   left_join(
@@ -163,6 +197,7 @@ total_processed_2014 %>%
   count(count == total)
 
 total_processed_2014 %>% 
+  filter(!is.na(package)) %>% 
   group_by(date) %>% 
   summarise(total = sum(total)) %>% 
   left_join(
@@ -171,30 +206,39 @@ total_processed_2014 %>%
   ) %>% 
   mutate(diff = total - count)
 
+cran_downloads(packages = "NA", from = "2014-10-31", to = "2014-10-31")
+
+
 ```
 
 2014 have 4 days that has different total r packages download comparing with `cranlog`. 
 
 
+
 ```{r}
 
-new_DF<-subset(DF,DF$Var2=="NA") 
-DF[rowSums(is.na(DF)) > 0,]
-
-
 X2014_10_31_csv %>% subset(is.na(X2014_10_31_csv$package))
+
+X2014_10_31_csv %>% 
+  group_by(country, ip_id) %>% 
+  summarise(unique(r_os)) %>% 
+  count(country, ip_id) %>% 
+  arrange(desc(n))
+
+X2014_10_31_csv %>% 
+  filter(country == "SG", ip_id == "927") %>% 
+  distinct(r_os, r_arch)
+
+
 
 ```
 ```{r}
 X2014_11_18_csv %>% subset(is.na(X2014_11_18_csv$package))
+cran_downloads(packages = "NA", from = "2014-11-18",to = "2014-11-18")
 
 ```
-```{r}
-pkg_name_20141118 <- unique(X2014_11_18_csv$package)
 
-
-cranlog_20141118 <- cran_downloads(packages = c(pkg_name_20141118), from = "2014-11-18", to = "2014-11-18")
-```
+The reasons behind these difference are the NA values in the cranlog raw data. Before 2014-10-31,  `cranlog` does not account for NA values for data. Starting from 2014-10-31, `cranlog` starts to record NA value. 
 
 
 ```{r}
@@ -216,24 +260,31 @@ total_processed_2015 %>%
   ) %>% 
   count(count == total)
 
-total_processed_2015 %>% 
-  group_by(date) %>% 
-  summarise(total = sum(total)) %>% 
-  left_join(
-   cran_dl,
-    by = "date"
-  ) %>% 
-  mutate(diff = total - count)
+
+# total_processed_2015 %>%
+#   group_by(date) %>%
+#   summarise(total = sum(total)) %>%
+#   left_join(
+#    cran_dl,
+#     by = "date"
+#   ) %>%
+#   mutate(diff = total - count)
+
 ```
+
+
 ```{r}
+group_sum <- function(DF) {
+  DF %>% group_by(package,date) %>% 
+    summarise(total = sum(n))
+}
+
 processed_2016 <-rds_files[grep(rds_files, pattern="2016")] %>% 
-                  map(readRDS) %>% 
+                  map(readRDS) 
+
+
+total_processed_2016 <- map(processed_2016,group_sum) %>% 
                   bind_rows()
-
-total_processed_2016 <- processed_2016 %>%  
-  group_by(package,date) %>% 
-  summarise(total = sum(n))
-
 
 total_processed_2016 %>% 
   group_by(date) %>% 
@@ -244,15 +295,18 @@ total_processed_2016 %>%
   ) %>% 
   count(count == total)
 
-total_processed_2016 %>% 
-  group_by(date) %>% 
-  summarise(total = sum(total)) %>% 
-  left_join(
-   cran_dl,
-    by = "date"
-  ) %>% 
-  mutate(diff = total - count)
+# total_processed_2016 %>%
+#   group_by(date) %>%
+#   summarise(total = sum(total)) %>%
+#   left_join(
+#    cran_dl,
+#     by = "date"
+#   ) %>%
+#   mutate(diff = total - count)
 ```
+
+
+
 ```{r}
 processed_2017 <-rds_files[grep(rds_files, pattern="2017")] %>% 
                   map(readRDS) %>% 
@@ -272,23 +326,26 @@ total_processed_2017 %>%
   ) %>% 
   count(count == total)
 
-total_processed_2017 %>% 
-  group_by(date) %>% 
-  summarise(total = sum(total)) %>% 
+total_processed_2017 %>%
+  group_by(date) %>%
+  summarise(total = sum(total)) %>%
   left_join(
    cran_dl,
     by = "date"
-  ) %>% 
+  ) %>%
   mutate(diff = total - count)
 ```
+
+
+
 ```{r}
- processed_2018 <-rds_files[grep(rds_files, pattern="2018")] %>% 
-                  map(readRDS) %>% 
+processed_2018 <-rds_files[grep(rds_files, pattern="2018")] %>% 
+                  map(readRDS) 
+
+
+total_processed_2018 <- map(processed_2018,group_sum) %>% 
                   bind_rows()
 
-total_processed_2018 <- processed_2018 %>%  
-  group_by(package,date) %>% 
-  summarise(total = sum(n))
 
 
 total_processed_2018 %>% 
@@ -300,23 +357,32 @@ total_processed_2018 %>%
   ) %>% 
   count(count == total)
 
-total_processed_2018 %>% 
-  group_by(date) %>% 
-  summarise(total = sum(total)) %>% 
+diff_2018 <- total_processed_2018 %>%
+  group_by(date) %>%
+  summarise(total = sum(total)) %>%
   left_join(
    cran_dl,
     by = "date"
-  ) %>% 
+  ) %>%
   mutate(diff = total - count)
+
+diff_2018
 ```
+
+```{r}
+re_download_date <- diff_2018 %>% 
+  filter(diff != 0) %>% 
+  select(date)
+```
+
+
+
 ```{r}
 processed_2019 <-rds_files[grep(rds_files, pattern="2019")] %>% 
-                  map(readRDS) %>% 
-                  bind_rows()
+                  map(readRDS) 
 
-total_processed_2019 <- processed_2019 %>%  
-  group_by(package,date) %>% 
-  summarise(total = sum(n))
+total_processed_2019 <- map(processed_2019,group_sum) %>% 
+                  bind_rows()
 
 
 total_processed_2019 %>% 
@@ -328,36 +394,26 @@ total_processed_2019 %>%
   ) %>% 
   count(count == total)
 
-total_processed_2019 %>% 
-  group_by(date) %>% 
-  summarise(total = sum(total)) %>% 
+diff_2019 <- total_processed_2019 %>%
+  group_by(date) %>%
+  summarise(total = sum(total)) %>%
   left_join(
    cran_dl,
     by = "date"
-  ) %>% 
+  ) %>%
   mutate(diff = total - count)
-```
 
-```{r}
-
-
-```
-
-
-```{r}
+diff_2019
 ```
 
 
 
 ```{r}
 processed_2020 <-rds_files[grep(rds_files, pattern="2020")] %>% 
-                  map(readRDS) %>% 
+                  map(readRDS) 
+
+total_processed_2020 <-map(processed_2020,group_sum) %>% 
                   bind_rows()
-
-total_processed_2020 <- processed_2020 %>%  
-  group_by(package,date) %>% 
-  summarise(total = sum(n))
-
 
 total_processed_2020 %>% 
   group_by(date) %>% 
@@ -368,7 +424,7 @@ total_processed_2020 %>%
   ) %>% 
   count(count == total)
 
-total_processed_2020 %>% 
+diff_2020 <- total_processed_2020 %>% 
   group_by(date) %>% 
   summarise(total = sum(total)) %>% 
   left_join(
@@ -376,16 +432,16 @@ total_processed_2020 %>%
     by = "date"
   ) %>% 
   mutate(diff = total - count)
+
+diff_2020
 ```
 
 ```{r}
 processed_2021 <-rds_files[grep(rds_files, pattern="2021")] %>% 
-                  map(readRDS) %>% 
-                  bind_rows()
+                  map(readRDS) 
 
-total_processed_2021 <- processed_2021 %>%  
-  group_by(package,date) %>% 
-  summarise(total = sum(n))
+total_processed_2021 <- map(processed_2021,group_sum) %>% 
+                  bind_rows()
 
 
 total_processed_2021 %>% 
@@ -397,7 +453,8 @@ total_processed_2021 %>%
   ) %>% 
   count(count == total)
 
-total_processed_2021 %>% 
+
+diff_2021 <- total_processed_2021 %>% 
   group_by(date) %>% 
   summarise(total = sum(total)) %>% 
   left_join(
@@ -405,6 +462,30 @@ total_processed_2021 %>%
     by = "date"
   ) %>% 
   mutate(diff = total - count)
+
+diff_2021 
+```
+
+```{r}
+X2021_07_04_csv %>% 
+  group_by(country, ip_id) %>% 
+  summarise(unique(r_os)) %>% 
+  count(country, ip_id) %>% 
+  arrange(desc(n))
+
+
+X2021_07_04_csv %>% 
+  filter(country == "US", ip_id == "10") %>% 
+  distinct(r_os, r_arch) 
+```
+
+```{r}
+
+X2021_07_04_csv %>% 
+  filter(package == "ggplot2") %>% 
+  nrow()
+
+cran_downloads(packages = "ggplot2", from = "2021-06-18", to = "2021-06-18")
 ```
 
 
@@ -435,4 +516,24 @@ cran_log_20121014$count - total_20121014$total
 
 ```
 
+```{r}
+diff_dates <- rbind(diff_2018,diff_2019,diff_2020,diff_2021) %>% 
+  filter(diff !=0 ) %>% 
+  select(date)
+
+diff_dates <- diff_dates$date
+```
+
+
+```{r}
+#re-downlaod all the un-matching dates
+year <- as.POSIXlt(diff_dates)$year + 1900
+
+urls <- paste0('http://cran-logs.rstudio.com/', year, '/', diff_dates, '.csv.gz')
+# You can then use download.file to download into a directory.
+
+destfile <- paste0(here("data/derived/"),diff_dates, '.csv.gz')
+
+download.file(urls,destfile)
+```
 

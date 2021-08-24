@@ -66,6 +66,8 @@ spilk_2014 <-
 save(spilk_2014, file = "Data/derived/spilk_2014.RData")
 
 
+# downloading cran log file using the download.file function 
+
 
 
 # download the cranlog on 2018-10-21 
@@ -113,18 +115,14 @@ sample_date_2 <- time_frame_2 %>%
 sampling_dates <-  as.Date(sort(c(sample_date$random_date,sample_date_2$random_date)))
 
 
-for (i in 1:159){
-  date <- paste0(sampling_dates[i])
-  dir <-  download_RStudio_CRAN_data(START = sampling_dates[i],
-                                        END = sampling_dates[i],
-                                        log_folder = "/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/data/derived/")
-  data <- read_RStudio_CRAN_data(
-  paste0("~/Documents/GitHub/paper-cran-category-classification/data/derived/",sampling_dates[i],".csv.gz"))
-  save(data, file = paste0("~/Documents/GitHub/paper-cran-category-classification/data/derived/",sampling_dates[i],".RData"))
-  }
+#re-downlaod all the un-matching dates
+year <- as.POSIXlt(sampling_dates)$year + 1900
 
-csv_files <- list.files(path = "../data/derived", pattern="\\.csv\\.gz$",
-                        full.names = TRUE) 
+urls <- paste0('http://cran-logs.rstudio.com/', year, '/', diff_dates, '.csv.gz')
+# You can then use download.file to download into a directory.
 
-# myfiles <- lapply(csv_files, read_csv)
-dt <- read_csv(csv_files, id = "file")
+destfile <- paste0(here("data/derived/"),diff_dates, '.csv.gz')
+
+download.file(urls,destfile)
+
+
