@@ -43,11 +43,11 @@ Things to check for the processed data:
 ```{r}
 # use 2012 as an example, if it works, apply to all data 
 
-# processed data consistant with cranlog data?
+# processed data consistent with cranlog data?
 
 # step 1 load in the processed data 
 
-rds_files <- list.files(path = "../data/processed", pattern=".rds$",
+rds_files <- list.files(path = here::here("data/processed"), pattern=".rds$",
                         full.names = TRUE) 
 
 processed_2012 <-rds_files[grep(rds_files, pattern="2012")] %>% 
@@ -121,6 +121,25 @@ There are in total `r r_pkg_20121009` r packaged downloaded from the cranlog raw
 
 The date for the 2012 is not matching. The file date and the actuall date is not consistant. After remove all the NA in the processed data, most of the dates are consistent with the cranlog package. However, the data fro `2012-12-26` has a huge gap between the cranlog file raw data and the `cranlog` package data. From the raw data file, there are only `r nrow(X2012_12_29_csv)` entries on that day. Double check with the raw data on the `2012-12-26`, it includes 24 hours of entries. 
 
+```{r}
+mulpi_ip <- function(DF) {
+  DF %>% 
+  group_by(country, ip_id) %>% 
+  summarise(unique(r_os)) %>% 
+  count(country, ip_id) %>% 
+  arrange(desc(n))}
+
+
+processed_2012 %>% 
+  count(package,date) %>% 
+  full_join(
+    total_processed_2012
+  ) %>% 
+  mutate(duplicate = total - n) %>% 
+  arrange(date)
+
+```
+
 
 ```{r}
 # checking the package downloads for each year 
@@ -177,6 +196,18 @@ processed_2013 %>%
 
 
 ```{r}
+processed_2013 %>% 
+  count(package,date) %>% 
+  full_join(
+    total_processed_2013
+  ) %>% 
+  mutate(duplicate = total - n) %>% 
+  arrange(date)
+
+```
+
+
+```{r}
 processed_2014 <-rds_files[grep(rds_files, pattern="2014")] %>% 
                   map(readRDS) %>% 
                   bind_rows()
@@ -213,6 +244,16 @@ cran_downloads(packages = "NA", from = "2014-10-31", to = "2014-10-31")
 
 2014 have 4 days that has different total r packages download comparing with `cranlog`. 
 
+```{r}
+processed_2014 %>% 
+  count(package,date) %>% 
+  full_join(
+    total_processed_2014
+  ) %>% 
+  mutate(duplicate = total - n) %>% 
+  arrange(desc(duplicate))
+```
+
 
 
 ```{r}
@@ -229,9 +270,9 @@ X2014_10_31_csv %>%
   filter(country == "SG", ip_id == "927") %>% 
   distinct(r_os, r_arch)
 
-
-
 ```
+
+
 ```{r}
 X2014_11_18_csv %>% subset(is.na(X2014_11_18_csv$package))
 cran_downloads(packages = "NA", from = "2014-11-18",to = "2014-11-18")
@@ -261,15 +302,25 @@ total_processed_2015 %>%
   count(count == total)
 
 
-# total_processed_2015 %>%
-#   group_by(date) %>%
-#   summarise(total = sum(total)) %>%
-#   left_join(
-#    cran_dl,
-#     by = "date"
-#   ) %>%
-#   mutate(diff = total - count)
+total_processed_2015 %>%
+  group_by(date) %>%
+  summarise(total = sum(total)) %>%
+  left_join(
+   cran_dl,
+    by = "date"
+  ) %>%
+  mutate(diff = total - count)
 
+```
+
+```{r}
+processed_2015 %>% 
+  count(package,date) %>% 
+  full_join(
+    total_processed_2015
+  ) %>% 
+  mutate(duplicate = total - n) %>% 
+  arrange(desc(duplicate))
 ```
 
 
@@ -305,6 +356,17 @@ total_processed_2016 %>%
 #   mutate(diff = total - count)
 ```
 
+```{r}
+ranking_2016 <- processed_2016 %>% 
+  bind_rows() %>% 
+  count(package,date) %>% 
+  full_join(
+    total_processed_2016
+  ) %>% 
+  mutate(duplicate = total - n) %>% 
+  arrange(desc(n))
+```
+
 
 
 ```{r}
@@ -336,6 +398,16 @@ total_processed_2017 %>%
   mutate(diff = total - count)
 ```
 
+```{r}
+ranking_2017 <- processed_2017 %>% 
+  bind_rows() %>% 
+  count(package,date) %>% 
+  full_join(
+    total_processed_2017
+  ) %>% 
+  mutate(duplicate = total - n) %>% 
+  arrange(desc(n))
+```
 
 
 ```{r}
@@ -370,9 +442,14 @@ diff_2018
 ```
 
 ```{r}
-re_download_date <- diff_2018 %>% 
-  filter(diff != 0) %>% 
-  select(date)
+ranking_2018 <- processed_2018 %>% 
+  bind_rows() %>% 
+  count(package,date) %>% 
+  full_join(
+    total_processed_2018
+  ) %>% 
+  mutate(duplicate = total - n) %>% 
+  arrange(date,desc(n))
 ```
 
 
@@ -406,6 +483,17 @@ diff_2019 <- total_processed_2019 %>%
 diff_2019
 ```
 
+```{r}
+ranking_2019 <- processed_2019 %>% 
+  bind_rows() %>% 
+  count(package,date) %>% 
+  full_join(
+    total_processed_2019
+  ) %>% 
+  mutate(duplicate = total - n) %>% 
+  arrange(date,
+          desc(n))
+```
 
 
 ```{r}
@@ -437,8 +525,40 @@ diff_2020
 ```
 
 ```{r}
-processed_2021 <-rds_files[grep(rds_files, pattern="2021")] %>% 
-                  map(readRDS) 
+ranking_2020_1 <- processed_2020[[1]] %>% 
+  count(package,date) %>% 
+  full_join(
+    total_processed_2020
+  ) %>% 
+  mutate(duplicate = total - n) %>% 
+  arrange(desc(n))
+
+ranking_2020_2 <- processed_2020[[2]] %>% 
+  count(package,date) %>% 
+  full_join(
+    total_processed_2020
+  ) %>% 
+  mutate(duplicate = total - n) %>% 
+  arrange(desc(n))
+
+rank_fun <- function(data){
+  data %>% count(package,date) %>% 
+  full_join(
+    total_processed_2020
+  ) %>% 
+  mutate(duplicate = total - n) %>% 
+  arrange(desc(n))
+}
+
+ranking_2020 <- map(processed_2020,rank_fun) %>% 
+  bind_rows()
+
+```
+
+
+```{r}
+processed_2021 <-readRDS(here("data/processed/2021-01-13.rds"))
+                 
 
 total_processed_2021 <- map(processed_2021,group_sum) %>% 
                   bind_rows()
@@ -465,14 +585,18 @@ diff_2021 <- total_processed_2021 %>%
 
 diff_2021 
 ```
+```{r}
+ranking_2021 <- map(processed_2021,rank_fun) %>% 
+  bind_rows()
+```
+
+
 
 ```{r}
-X2021_07_04_csv %>% 
-  group_by(country, ip_id) %>% 
-  summarise(unique(r_os)) %>% 
-  count(country, ip_id) %>% 
-  arrange(desc(n))
 
+
+ip_2021 <- map(processed_2021,mulpi_ip) %>% 
+                  bind_rows()
 
 X2021_07_04_csv %>% 
   filter(country == "US", ip_id == "10") %>% 
@@ -510,7 +634,6 @@ total_20121014 <- `2012-10-14` %>%
   group_by(package) %>% 
   summarise(total = sum(n)) 
 
-cran_log_20121014$count - total_20121014$total
 # calculate the differences 
 
 

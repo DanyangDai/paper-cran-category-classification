@@ -1,0 +1,246 @@
+---
+title: "02b-rpkg-download-updates"
+author: "Danyang Dai"
+date: "31/08/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+library(rvest)
+library(glue)
+library(feasts)
+library(cranlogs)
+library(plotly)
+library(scales)
+```
+
+```{r}
+# adding the userR conference date
+conference_dates <- tribble(
+  ~name, ~date,
+  "UseR", "2004-05-20",
+  "UseR", "2006-06-15",
+  "UseR", "2007-08-08",
+  "UseR", "2008-08-14",
+  "UseR", "2009-07-08",
+  "UseR", "2010-07-20",
+  "UseR", "2011-08-16",
+  "UseR", "2012-06-12",
+  "UseR", "2013-06-10",
+  "UseR", "2014-06-30",
+  "UseR", "2015-06-30",
+  "UseR", "2016-06-27",
+  "UseR", "2017-07-04",
+  "UseR", "2018-07-10",
+  "UseR", "2019-07-09",
+  "UseR", "2020-07-07",
+  "UseR", "2021-07-05",
+  "RStudio", "2017-01-11",
+  "RStudio", "2018-01-31",
+  "RStudio", "2019-01-15",
+  "RStudio", "2020-01-27",
+  "RStudio", "2021-03-03",
+)
+
+UseR <- dplyr::filter(conference_dates, name == "UseR", date > "2013-01-01")
+Rstudio <- dplyr::filter(conference_dates, name == "RStudio")
+```
+
+
+```{r}
+# load in the data from the database
+library(DBI)
+
+con <- dbConnect(
+  RPostgres::Postgres(),
+  host = Sys.getenv("host"),
+  dbname = "cranlogs",
+  user = "guest",
+  password = Sys.getenv("cranlogpw")
+)
+
+DBI::dbListTables(con)
+#> [1] "cran_logs"
+cran_logs <- tbl(con, "cran_logs")
+
+daily_total <- cran_logs %>%
+  group_by(date) %>%
+  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>%
+  collect() %>%
+  mutate(across(c("total_unique", "total_download"), as.integer))
+```
+
+
+```{r}
+library(tsibble)
+daily_total %>%
+  as_tsibble() %>%
+  fill_gaps() %>%
+  # complete(date = seq.Date(min(date), max(date), by="day")) %>%
+  filter(is.na(total_unique))
+
+# there are three days of missing data. In order to fit models for later analysis, filled the missing data with the same date from 2013-01-01. The reason is that from 12-29 to 12-31 are all holiday seasons and use the new years day data as supplements
+
+daily_total <- daily_total %>%
+  add_row(date = as.Date("2012-12-31"), total_unique = 13676, total_download = 10911, .before = 90) %>%
+  add_row(date = as.Date("2012-12-30"), total_unique = 13676, total_download = 10911, .before = 90) %>%
+  add_row(date = as.Date("2012-12-29"), total_unique = 13676, total_download = 10911, .before = 90)
+```
+
+
+```{r}
+daily_total %>%
+  as_tsibble(index = date) %>%
+  #fill_gaps() %>%
+  model(
+    STL(total_unique ~ trend() +
+      season("week", window = "periodic"))
+  ) %>%
+  components() %>%
+  autoplot()+
+  geom_vline(
+    xintercept = as.numeric(as.Date(Rstudio$date)), linetype = "dotted",
+    color = "red", size = 0.1
+  ) +
+  geom_vline(
+    xintercept = as.numeric(as.Date(UseR$date)), linetype = "dotted",
+    color = "blue", size = 0.1
+  ) 
+```
+
+```{r}
+daily_total %>%
+  ggplot() +
+  geom_line(aes(date, total_unique)) +
+  geom_vline(
+    xintercept = as.numeric(as.Date(UseR$date)), linetype = "dotted",
+    color = "blue", size = 0.1
+  ) +
+  geom_vline(
+    xintercept = as.numeric(as.Date(Rstudio$date)), linetype = "dotted",
+    color = "red", size = 0.1
+  )
+```
+
+```{r}
+accum_downloads <- cran_logs %>%
+  group_by(package) %>%
+  summarise(accum_unique = sum(n_unique), accum_total = sum(n_total)) %>%
+  collect() %>%
+  mutate(across(c("accum_unique", "accum_total"), as.integer))
+
+accum_downloads_unqie <- accum_downloads %>%
+  arrange(accum_unique) %>%
+  mutate(order = rep(1:21754))
+
+top_100_unique <- accum_downloads_unqie[21654:21754, ]
+
+total_unique <- sum(accum_downloads$accum_unique)
+sum(top_100_unique$accum_unique) / total_unique
+```
+
+```{r}
+accum_downloads_unqie %>%
+  ggplot() +
+  geom_point(aes(x = order, y = accum_unique))
+```
+
+From the plot we could see that majority of the packages has relatively low accumulated downloads. The top 100 packages constitute 47\% of the total unique downloads. 
+
+```{r}
+accum_downloads_total <- accum_downloads %>%
+  arrange(accum_total) %>%
+  mutate(order = rep(1:21754))
+
+
+accum_downloads_total %>%
+  ggplot() +
+  geom_point(aes(x = order, y = accum_total))
+
+
+top_100_total <- accum_downloads_total[21654:21754, ]
+
+total_total <- sum(accum_downloads$accum_total)
+sum(top_100_total$accum_total) / total_total
+```
+Same pattern can be found in the total downloads. The top 100 packages constitute 49\% of the total unique downloads. 
+
+```{r}
+load(here::here("data/derived/updates.Rdata"))
+load(here::here("data/derived/updates_2.Rdata"))
+load(here::here("data/derived/updates_3.Rdata"))
+load(here::here("data/derived/updates_4.Rdata"))
+load(here::here("data/derived/updates_5.Rdata"))
+load(here::here("data/derived/updates_6.Rdata"))
+load(here::here("data/derived/updates_7.Rdata"))
+load(here::here("data/derived/updates_8.Rdata"))
+load(here::here("data/derived/updates_9.Rdata"))
+
+updates_list <- list(updates, updates_2, updates_3, updates_4, updates_5, updates_6, updates_7, updates_8, updates_9)
+
+select_pkg_ver_date <- function(x) {
+  x %>%
+    dplyr::select(Package, Version, date)
+}
+
+
+updates_select <- map_dfr(updates_list, select_pkg_ver_date)
+
+updates_select <- updates_select %>%
+  mutate(Date = as.Date(updates_select$date))
+```
+
+
+```{r}
+updates_dbplyr <- updates_select %>%
+  filter(Package == "dbplyr")
+
+dbplyr_download <- cran_logs %>%
+  filter(package == "dbplyr") %>%
+  collect()
+
+
+dbplyr <- dbplyr_download %>%
+  ggplot() +
+  geom_line(aes(date, n_unique)) +
+  geom_vline(xintercept = updates_dbplyr$Date, linetype = "dotted", color = "red", size = 0.1) +
+  scale_x_date(limits = as.Date(c("2017-06-09", "2021-07-30")))
+
+ggplotly(dbplyr, dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+```
+
+```{r}
+dbplyr_download %>%
+  as_tsibble(index = date) %>%
+  model(
+    STL(n_unique ~ trend() +
+      season("week", window = "periodic"))
+  ) %>%
+  components() %>%
+  autoplot() +
+  geom_vline(xintercept = updates_dbplyr$Date, linetype = "dotted", color = "red", size = 0.1) +
+  scale_x_date(limits = as.Date(c("2017-06-09", "2021-07-30")))
+```
+
+
+
+```{r}
+first_realse <- cran_logs %>%
+  group_by(package) %>%
+  filter(date == min(date)) %>%
+  collect()
+
+first_realse %>%
+  arrange(date)
+```
+
+
+```{r}
+first_realse %>% 
+  
+```
+

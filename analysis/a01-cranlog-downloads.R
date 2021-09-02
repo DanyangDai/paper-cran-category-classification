@@ -56,12 +56,12 @@ library(installr)
 spilk_2014_dir <-
   download_RStudio_CRAN_data(START = '2014-11-17',
                              END = '2014-11-17',
-                             log_folder = "/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/data/derived")
+                             log_folder = here("data/derived"))
 # read .gz compressed files form local directory
 spilk_2014 <-
   read.csv(
-    "~/Documents/GitHub/paper-cran-category-classification/paper/Data/2014-11-17.csv.gz"
-  )
+    here("/Data/2014-11-17.csv.gz"
+  ))
 #save the data locally
 save(spilk_2014, file = "Data/derived/spilk_2014.RData")
 

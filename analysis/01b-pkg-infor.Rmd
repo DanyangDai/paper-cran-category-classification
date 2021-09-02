@@ -1,0 +1,72 @@
+---
+title: "01b-pkg-infor"
+author: "Danyang Dai"
+date: "29/08/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(rvest)
+library(glue)
+library(feasts)
+library(cranlogs)
+library(plotly)
+library(scales)
+library(lubridate)
+knitr::opts_chunk$set(
+  cache = TRUE,
+  cache.path = "cache/"
+)
+```
+
+```{r}
+library(DBI)
+
+con <- dbConnect(
+  RPostgres::Postgres(),
+  host = Sys.getenv("cranloghost"),
+  dbname = "cranlogs",
+  user = "guest",
+  password = Sys.getenv("cranlogpw")
+)
+
+DBI::dbListTables(con)
+#> [1] "cran_logs"
+cran_logs <- tbl(con, "cran_logs")
+
+# cran_logs %>%
+#   filter(package %in% c("rmarkdown", "shiny")) %>%
+#   collect() %>%
+#   pivot_longer(c(n_unique, n_total)) %>%
+#   ggplot(aes(x = date, y = value, colour = name)) +
+#   geom_line() +
+#   scale_y_log10() +
+#   facet_grid(vars(package))
+```
+ 
+ 
+```{r}
+daily_total <- cran_logs %>%
+  group_by(date) %>%
+  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>%
+  collect() %>%
+  mutate(across(c("total_unique", "total_download"), as.integer))
+
+
+
+daily_total %>%
+  pivot_longer(c(total_unique, total_download)) %>%
+  ggplot(aes(x = date)) +
+  geom_line(aes(y = value / 1000, colour = name))
+```
+
+From the graph above, it shows that 
+
+
+
+```{r}
+
+```
