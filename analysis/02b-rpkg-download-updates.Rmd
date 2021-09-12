@@ -151,6 +151,9 @@ sum(top_100_total$accum_total) / total_total
 ```
 Same pattern can be found in the total downloads. The top 100 packages constitute 49\% of the total unique downloads. 
 
+
+
+
 ```{r}
 load(here::here("data/derived/updates.Rdata"))
 load(here::here("data/derived/updates_2.Rdata"))
@@ -174,8 +177,125 @@ updates_select <- map_dfr(updates_list, select_pkg_ver_date)
 
 updates_select <- updates_select %>%
   mutate(Date = as.Date(updates_select$date))
+
+first_realse <- updates_select %>% 
+  group_by(Package) %>%
+  filter(date == min(date)) %>% 
+  rename(package = Package)
 ```
 
+```{r}
+unique_2020 <- cran_logs %>% 
+  filter(date >= "2020-06-01") %>% 
+  filter(date <= "2021-06-01") %>% 
+  group_by(date) %>% 
+  summarise(daily_unique = sum(n_unique),
+            daily_total = sum(n_total)) %>% 
+  collect() %>% 
+  mutate(across(c("daily_unique", "daily_total"), as.integer))
+
+unique_2020 %>% 
+  ggplot(aes(x=date,y=daily_unique/1000))+
+  geom_line()
+
+```
+
+
+```{r}
+# last year total downloads 
+
+past_year_data <- cran_logs %>% 
+  filter(date >= "2020-06-01") %>% 
+  filter(date <= "2021-06-01") %>% 
+  group_by(package) %>% 
+  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>% 
+  collect() 
+  
+past_year_unique <- past_year_data %>% 
+  arrange(total_unique) %>%
+  mutate(order = rep(1:nrow(past_year_data))) %>% 
+
+
+past_year_100 <- past_year_unique[21088:21188, ]
+
+past_year_realse_unique <- past_year_100 %>%
+  left_join(first_realse, by = "package") %>%
+  ggplot(aes(x = Date, y = total_unique)) +
+  geom_point(aes(label = package))
+
+ggplotly(past_year_realse_unique, dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+```
+
+```{r}
+past_year_bottom <- past_year_unique[1:5000, ]
+
+ past_year_unique %>%
+  left_join(first_realse, by = "package") %>%
+  filter(Date <= "2019-06-30") %>% 
+  arrange(total_unique) %>% 
+  slice(1:1000) %>% 
+  ggplot(aes(x = total_download, y = total_unique)) +
+  geom_point(aes(label = package, color = total_download))+
+  scale_color_viridis_c() +
+  geom_abline(slope = 1, intercept = 0)+ 
+  geom_smooth(method = "lm", formula = y ~ -1 + x )
+
+ggplotly(past_year_realse_unique_bottom, dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+```
+
+
+```{r}
+updates_select %>% 
+  filter(Package %in% c(past_year_bottom$package)) %>% 
+  count(Package) %>% 
+  arrange(desc(n))
+
+```
+
+
+
+```{r}
+updates_matrixpls <- updates_select %>%
+  filter(Package == "matrixpls")
+
+
+matrixpls_download <- cran_logs %>%
+  filter(package == "matrixpls") %>%
+  collect()
+
+
+matrixpls <- matrixpls_download %>%
+  ggplot() +
+  geom_line(aes(date, n_unique)) +
+  geom_vline(xintercept = updates_matrixpls$Date, linetype = "dotted", color = "red", size = 0.1) 
+
+ggplotly(matrixpls, dynamicTicks = TRUE) %>%
+  layout(hovermode = "x")
+```
+
+```{r}
+matrixpls_download %>% 
+  duplicated()
+```
+
+
+```{r}
+matrixpls_download %>%
+  as_tsibble(index = date) %>%
+  # fill_gaps() %>%
+  model(
+    STL(n_unique ~ trend() +
+      season("week", window = "periodic"))
+  ) %>%
+  components() %>%
+  autoplot() +
+  geom_vline(
+    xintercept = as.numeric(as.Date(updates_matrixpls$date)), linetype = "dotted",
+    color = "red", size = 0.1
+  ) 
+```
 
 
 ```{r}
@@ -237,16 +357,6 @@ ggplotly(forecast_update, dynamicTicks = TRUE) %>%
 
 
 
-```{r}
-first_realse <- cran_logs %>%
-  group_by(package) %>%
-  filter(date == min(date)) %>%
-  collect()
-
-first_realse %>%
-  arrange(date)
-```
-
 
 ```{r}
 top_100_unique %>%
@@ -257,12 +367,21 @@ top_100_unique %>%
 ```{r}
 realse_unique <- top_100_unique %>%
   left_join(first_realse, by = "package") %>%
-  ggplot(aes(x = date, y = accum_unique)) +
+  ggplot(aes(x = Date, y = accum_unique)) +
   geom_point(aes(label = package))
 
-ggplotly(realse_unique, dynamicTicks = TRUE) %>%
-  layout(hovermode = "x")
+
+
+ggplotly(realse_unique, dynamicTicks = TRUE)
+
 ```
+
+
+
+
+
+
+
 ```{r}
 top_100_total %>%
   left_join(first_realse, by = "package") %>%
@@ -272,8 +391,8 @@ top_100_total %>%
 ```{r}
 relase_total <- top_100_total %>%
   left_join(first_realse, by = "package") %>%
-  ggplot(aes(x = date, y = accum_total)) +
-  geom_point()
+  ggplot(aes(x = Date, y = accum_total)) +
+  geom_point(aes(lable = package))
 
 ggplotly(relase_total, dynamicTicks = TRUE) %>%
   layout(hovermode = "x")

@@ -1,0 +1,126 @@
+---
+title: "appendix-01-data"
+author: "Danyang Dai"
+date: "09/09/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(broom)
+library(cranlogs)
+library(dplyr)
+```
+
+# Appendix 
+
+## Data sanity check  
+
+After processing the data, the data includes package name, the number of unique downloads per day and the number of total downloads per day. Before the analysis, it is necessday to check the sanity of the data. 
+
+The first sanity check is to ensure that the processed total download is consistent with the cranlog downloads.
+
+```{r}
+library(DBI)
+
+con <- dbConnect(
+  RPostgres::Postgres(),
+  host = Sys.getenv("cranloghost"),
+  dbname = "cranlogs",
+  user = "guest",
+  password = Sys.getenv("cranlogpw")
+)
+
+DBI::dbListTables(con)
+#> [1] "cran_logs"
+cran_logs <- tbl(con, "cran_logs")
+```
+
+
+```{r}
+# getting the daily total and unique downloads from the local database 
+daily_total <- cran_logs %>%
+  group_by(date) %>%
+  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>%
+  collect() %>%
+  mutate(across(c("total_unique", "total_download"), as.integer))
+```
+
+```{r}
+# compare processed daily total downloads with the cranlog package number 
+processed_cranlog <- daily_total %>% 
+  left_join(
+    cran_downloads(from = "2012-10-01", to = "2021-08-22"),
+    by = "date"
+  ) 
+
+processed_cranlog <- processed_cranlog %>% 
+  mutate(diff = count - total_download)
+
+# identify the dates where the processed data is not equal to the cranlog downloads 
+processed_diff <- processed_cranlog %>% 
+  filter(diff != 0 )
+
+```
+
+
+```{r}
+#processed from the home server 
+
+all_file <-  list.files(path = "cranlogs", pattern=".csv.gz$",
+                        full.names = TRUE) 
+
+diff_file <- paste0("cranlogs/",processed_diff$date,".csv.gz")
+
+diff_file_name <- all_file[all_file %in% diff_file]
+
+
+names(diff_file_name) <- str_remove(basename(diff_file),"\\.csv\\.gz$")
+
+diff_date <- tibble(unique(output$date))
+
+for (i in ( 1:708)) {
+  #load in the cranlog file
+  diff_cranlog <- lapply(diff_file_name[i], read_csv)
+  output <- bind_rows(diff_cranlog, .id = "file")
+  # get the no. of na packages 
+  isna <- output %>% 
+    filter(is.na(package)) %>% 
+    nrow()
+  # add the no.of NA packages to the total downloads from cranlog 
+  cranlog <- isna + cran_downloads(from = max(unique(output$date)) , to = max(unique(output$date)))$count
+  na <- daily_total %>% 
+    filter(date == names(diff_file_name[i])) %>% 
+    pull(total_download)
+  # compare with the processed data 
+  tf <- (cranlog == na)
+  if (tf == "TRUE"){
+     i <- i+1
+   } else {
+  diff_date <-rbind(diff_date,as.data.frame(unique(output$date)))
+    i <- i+1 }
+}
+
+```
+
+
+```{r}
+# The different date after the computing on the server 
+diff_date <- structure(list(`unique(output$date)` = structure(c(15619, 15619, 
+15620, 15624, 15621, 15626, 15627, 15628, 15630, 15635, 15640, 
+15641, 15643, 15644, 15645, 15646, 15647, 15648, 15650, 15651, 
+15652, 15653, 15654, 15655, 15656, 15657, 15658, 15660, 15661, 
+15662, 15664, 15665, 15667, 15668, 15669, 15670, 15671, 15672, 
+15673, 15674, 15675, 15676, 15677, 15678, 15679, 15680, 15681, 
+15683, 15684, 15685, 15686, 15687, 15688, 15689, 15690, 15691, 
+15692, 15693, 15694, 15695, 15696, 15697, 15698, 15699, 15706, 
+15848, 15848, 15849, 15853, 15853, 15854, 15959, 15959, 15960, 
+15977, 16206, 16207, 16206, 16207, 16208, 16211, 16211, 16212, 
+17379), class = "Date")), row.names = c(NA, -84L), class = c("tbl_df", 
+"tbl", "data.frame"))
+```
+
+
+
