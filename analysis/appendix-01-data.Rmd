@@ -293,6 +293,23 @@ remaining_diff_file %>%
   
 ```
 
+```{r}
+# Function to adjust for 2012 data 
+same_logfile <- as.Date(c("2012-10-11","2012-10-13","2012-10-15"))
+
+separate_2012 <- function(cran_logs){
+  cran_logs %>% filter(!file_date %in% same_logfile) %>% 
+  filter(file_date < "2013-01-01")
+  
+}
+
+  group_by()
+  collect()
+  group_by(date) %>%
+  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>%
+  collect() %>%
+```
+
 
 ```{r}
 # Finding the unmatching days with file name and the actul dates inside

@@ -66,11 +66,31 @@ DBI::dbListTables(con)
 #> [1] "cran_logs"
 cran_logs <- tbl(con, "cran_logs")
 
-daily_total <- cran_logs %>%
-  group_by(date) %>%
-  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>%
+same_logfile <- as.Date(c("2012-10-11","2012-10-13","2012-10-15"))
+
+daily_total_pre2013 <- cran_logs %>%
+  filter(!file_date %in% same_logfile) %>% 
+  filter(file_date < "2013-01-01") %>% 
+  group_by(date) %>% 
+  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>% 
   collect() %>%
   mutate(across(c("total_unique", "total_download"), as.integer))
+
+daily_total_post2013 <- cran_logs %>%
+  filter(file_date >= "2013-01-01") %>% 
+  group_by(file_date) %>% 
+  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>% 
+  collect() %>%
+  mutate(across(c("total_unique", "total_download"), as.integer)) %>% 
+  rename(date = file_date)
+
+daily_total <- bind_rows(daily_total_pre2013,daily_total_post2013)
+
+duplicate_dates <- daily_total$date[duplicated(daily_total$date)]
+
+seq_date <- daily_total$date
+range_date <- seq(min(seq_date), max(seq_date), by = 1)
+range_date[!range_date %in% seq_date] 
 ```
 
 
@@ -252,6 +272,98 @@ updates_select %>%
   count(Package) %>% 
   arrange(desc(n))
 
+```
+
+```{r}
+# A function that does STL decomposition on all the packages 
+
+cran_package <- function(pkg_name){
+  # input pkg must be a character veriable 
+  library(DBI)
+  library(tidyverse)
+  
+  con <- dbConnect(
+  RPostgres::Postgres(),
+  host = Sys.getenv("cranloghost"),
+  dbname = "cranlogs",
+  user = "guest",
+  password = Sys.getenv("cranlogpw")
+)
+
+  DBI::dbListTables(con)
+  #> [1] "cran_logs"
+  cran_logs <- tbl(con, "cran_logs")
+  
+  # same_logfile <- as.Date(c("2012-10-11","2012-10-13","2012-10-15"))
+  # 
+  # package_download_pre2013 <- cran_logs %>% 
+  # filter(!file_date %in% same_logfile) %>% 
+  # filter(file_date < "2013-01-01") %>% 
+  # filter(package == pkg_name) %>% 
+  # select(date,package,n_unique,n_total) %>% 
+  # collect()
+  # 
+  package_download_post2013 <- cran_logs %>% 
+  filter(file_date >= "2013-01-01") %>% 
+  filter(package == pkg_name) %>% 
+  group_by(file_date) %>% 
+  summarise(unique = sum(n_unique),total = sum(n_total)) %>% 
+  collect() %>% 
+  rename(date = file_date) %>% 
+  mutate(across(c("unique", "total"), as.integer))
+
+  #package_download <- bind_rows(package_download_pre2013,package_download_post2013)
+
+  return(package_download_post2013)
+}
+```
+
+```{r}
+update_pkg <- function(pkg_name){
+  # pkg_name must be a character variable 
+  library(tidyverse)
+  update_date <- updates_select %>% 
+  filter(Package == pkg_name ) %>% 
+  select(Package, Version, Date)
+  return(update_date)
+}
+```
+
+```{r}
+stl_update_unique <- function(pkg_downloads,updates){
+  library(fabletools)
+  pkg_date <- pkg_downloads$date
+  date_range <- seq(min(pkg_date), max(pkg_date), by = 1)
+  missing_date <- !date_range %in% pkg_date
+  t <- missing_date[missing_date == TRUE]
+ if( TRUE %in% t){
+   return(print("This package does not have continues data"))
+ }
+  else{
+    return(
+  pkg_downloads %>%
+  as_tsibble(index = date) %>%
+  model(
+    STL(unique ~ trend() +
+      season("week", window = "periodic"))
+  ) %>%
+  components() %>% 
+  autoplot() +
+  geom_vline(
+    xintercept = as.numeric(as.Date(updates$Date)), linetype = "dotted",
+    color = "red", size = 0.1
+  )
+    )
+    }
+}
+
+```
+
+
+```{r}
+ggplot_cranlog <- cran_package("ggplot2")
+ggplot_update <- update_pkg("ggplot2")
+stl_update_unique(ggplot_cranlog,ggplot_update)
 ```
 
 

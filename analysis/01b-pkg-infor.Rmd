@@ -46,17 +46,31 @@ cran_logs <- tbl(con, "cran_logs")
 #   scale_y_log10() +
 #   facet_grid(vars(package))
 ```
- 
- 
 ```{r}
-daily_total <- cran_logs %>%
-  group_by(date) %>%
-  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>%
+same_logfile <- as.Date(c("2012-10-11","2012-10-13","2012-10-15"))
+
+daily_total_pre2013 <- cran_logs %>%
+  filter(!file_date %in% same_logfile) %>% 
+  filter(file_date < "2013-01-01") %>% 
+  group_by(date) %>% 
+  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>% 
   collect() %>%
   mutate(across(c("total_unique", "total_download"), as.integer))
 
+daily_total_post2013 <- cran_logs %>%
+  filter(file_date >= "2013-01-01") %>% 
+  group_by(file_date) %>% 
+  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>% 
+  collect() %>%
+  mutate(across(c("total_unique", "total_download"), as.integer)) %>% 
+  rename(date = file_date)
 
+daily_total <- bind_rows(daily_total_pre2013,daily_total_post2013)
 
+```
+
+ 
+```{r}
 daily_total %>%
   pivot_longer(c(total_unique, total_download)) %>%
   ggplot(aes(x = date)) +
@@ -67,95 +81,12 @@ From the graph above, it shows that
 
 
 
-```{r}
-duplicated_date <- cran_logs %>%
-  count(date,package) %>% 
-  filter(n>1) %>% 
-  count(date) %>% 
-  collect %>% 
-  mutate(across(c(n), as.integer))
-
-cran_logs %>% 
-  count(date,package) %>%
-  filter(date == "2013-05-23") %>% 
-  collect()
-
-```
-
-
-```{r}
-cran_logs %>% 
-  count(date,package) %>%
-  filter(date == "2012-10-07") %>% 
-  collect()
-```
-
-```{r}
-processed_file <-  list.files(path = here::here("data/cranlogs_processed"), pattern=".csv.gz$",
-                        full.names = TRUE) 
-names(processed_file) <- str_remove(basename(processed_file),"\\.csv\\.gz$")
-
-```
-
-```{r}
-# for (i in (1:3248)) {
-#   cranlog_processed <- lapply(processed_file[i], read_csv)
-#   output <- bind_rows(cranlog_processed, .id = "file")
-#   tf <- output %>% 
-#    count(date == file) 
-#   if (tf$`date == file` == "TRUE"){
-#      i <- i+1 
-#    } else {
-#     unmatch <-rbind(unmatch,output)
-#     i <- i+1 }
-# }
-
-unmatch <- unmatch %>% 
-  mutate(across(c("file"), as.Date)) %>% 
-  filter(file != date)
-
-unmatch_date <- unmatch %>% 
-  count(file,date)
-
-unmatch_pkg <- unmatch %>% 
-  count(file,date,package)
-
-```
-
-
-```{r}
-forecast_dupl_date <- forecast_download %>% 
-  filter(duplicated(date))
-
-forecast_dupl<- forecast_download %>% 
-  filter(date %in% forecast_dupl_date$date)
-
-
-unmatch_forecast <- unmatch %>% filter(package == "forecast")
-
-unmatch_forecast %>% filter(date %in% forecast_dupl$date)
-  
-
-```
-
-```{r}
-cran_logs %>% 
-  count(date,package) %>% 
-  filter(n >1)
-```
 
 
 
-```{r}
-matrixpls_dup <- matrixpls_download %>% 
- filter(duplicated(date))
 
-matrixpls_download %>% 
-  filter(date %in% c(matrixpls_dup$date))
-```
-```{r}
-unmatch_matrixpls <- unmatch %>% filter(package == "matrixpls")
 
-unmatch_matrixpls %>% filter(date %in% matrixpls_dup$date)
-```
+
+
+
 
