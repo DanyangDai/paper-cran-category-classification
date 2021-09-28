@@ -335,14 +335,15 @@ stl_update_unique <- function(pkg_downloads,updates){
   pkg_date <- pkg_downloads$date
   date_range <- seq(min(pkg_date), max(pkg_date), by = 1)
   missing_date <- !date_range %in% pkg_date
-  t <- missing_date[missing_date == TRUE]
- if( TRUE %in% t){
-   return(print("This package does not have continues data"))
- }
-  else{
-    return(
+  tf <- missing_date[missing_date == TRUE]
+ # if( TRUE %in% tf){
+ #   return(print("This package does not have continues data"))
+ # }
+ #  else{
+ #    return(
   pkg_downloads %>%
   as_tsibble(index = date) %>%
+  tsibble::fill_gaps(unique = 0) %>% 
   model(
     STL(unique ~ trend() +
       season("week", window = "periodic"))
@@ -351,10 +352,10 @@ stl_update_unique <- function(pkg_downloads,updates){
   autoplot() +
   geom_vline(
     xintercept = as.numeric(as.Date(updates$Date)), linetype = "dotted",
-    color = "red", size = 0.1
+    color = "red", size = 0.5
   )
-    )
-    }
+    
+    
 }
 
 ```
@@ -366,108 +367,30 @@ ggplot_update <- update_pkg("ggplot2")
 stl_update_unique(ggplot_cranlog,ggplot_update)
 ```
 
-
-
 ```{r}
-updates_matrixpls <- updates_select %>%
-  filter(Package == "matrixpls")
-
-
-matrixpls_download <- cran_logs %>%
-  filter(package == "matrixpls") %>%
-  collect()
-
-
-matrixpls <- matrixpls_download %>%
-  ggplot() +
-  geom_line(aes(date, n_unique)) +
-  geom_vline(xintercept = updates_matrixpls$Date, linetype = "dotted", color = "red", size = 0.1) 
-
-ggplotly(matrixpls, dynamicTicks = TRUE) %>%
-  layout(hovermode = "x")
+forecast_cranlog <- cran_package("forecast")
+forecast_update <- update_pkg("forecast")
+stl_update_unique(forecast_cranlog,forecast_update)
 ```
 
 ```{r}
-matrixpls_download %>% 
-  duplicated()
+dpcc_cranlog <- cran_package("dpcc")
+dpcc_update <- update_pkg("dpcc")
+stl_update_unique(dpcc_cranlog,dpcc_update)
 ```
 
 
 ```{r}
-matrixpls_download %>%
+ dpcc_cranlog %>%
   as_tsibble(index = date) %>%
-  # fill_gaps() %>%
+  tsibble::fill_gaps(unique = 0) %>% 
   model(
-    STL(n_unique ~ trend() +
+    STL(unique ~ trend() +
       season("week", window = "periodic"))
   ) %>%
-  components() %>%
-  autoplot() +
-  geom_vline(
-    xintercept = as.numeric(as.Date(updates_matrixpls$date)), linetype = "dotted",
-    color = "red", size = 0.1
-  ) 
+  components() %>% 
+  autoplot()
 ```
-
-
-```{r}
-updates_forecast <- updates_select %>%
-  filter(Package == "forecast")
-
-forecast_download <- cran_logs %>%
-  filter(package == "forecast") %>%
-  collect()
-
-
-forecast <- forecast_download %>%
-  ggplot() +
-  geom_line(aes(date, n_unique)) +
-  geom_vline(xintercept = updates_forecast$Date, linetype = "dotted", color = "red", size = 0.1) 
-
-ggplotly(forecast, dynamicTicks = TRUE) %>%
-  layout(hovermode = "x")
-```
-
-```{r}
-updates_dbplyr <- updates_select %>%
-  filter(Package == "dbplyr")
-
-dbplyr_download <- cran_logs %>%
-  filter(package == "dbplyr") %>%
-  collect()
-
-
-dbplyr <- dbplyr_download %>%
-  ggplot() +
-  geom_line(aes(date, n_unique)) +
-  geom_vline(xintercept = updates_dbplyr$Date, linetype = "dotted", color = "red", size = 0.1) +
-  scale_x_date(limits = as.Date(c("2017-06-09", "2021-07-30")))
-
-ggplotly(dbplyr, dynamicTicks = TRUE) %>%
-  layout(hovermode = "x")
-```
-
-```{r}
-forecast_update <- 
-  
-  forecast_download %>%
-  fill_gaps() %>% 
-  filter(date >= "2013-12-31") %>% 
-  as_tsibble(index = date) %>%
-  model(
-    STL(n_unique ~ trend() +
-      season("week", window = "periodic"))
-  ) %>%
-  components() %>%
-  autoplot() +
-  geom_vline(xintercept = updates_forecast$Date, linetype = "dotted", color = "red", size = 0.1) +
-  scale_x_date(limits = as.Date(c("2012-10-01", "2021-07-30")))
-
-ggplotly(forecast_update, dynamicTicks = TRUE) %>%
-  layout(hovermode = "x")
-```
-
-
 
 
 ```{r}

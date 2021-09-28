@@ -1,0 +1,361 @@
+---
+title: "Appendix for R package downloads"
+author:
+  - name: Danyang Dai 
+    affiliation: Department of Econometrics and Business Statistics, Monash University, Melbourne, VIC 3800
+    email: danyangdai@monash.edu
+  - name: Emi Tanaka
+    affiliation: Department of Econometrics and Business Statistics, Monash University, Melbourne, VIC 3800
+    email: emi.tanaka@monash.edu
+output:
+  bookdown::html_document2:
+    code_folding: "hide"
+    theme: "paper"
+    code_download: true
+    number_sections: false
+---
+
+
+<details>
+
+
+<summary> Code to load library and data </summary>
+
+
+```{r setup, message = FALSE, warning = FALSE, class.source = 'fold-show'}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(broom)
+library(cranlogs)
+library(dplyr)
+library(knitr)
+library(DT)
+```
+
+
+```{r knitr-setup, include = FALSE}
+htmltools::tagList(rmarkdown::html_dependency_font_awesome())
+knitr::opts_chunk$set(fig.path = "images/",
+                      dev = c("png", "pdf", "svg"),
+                      cache = TRUE,
+                      cache.path = "cache/",
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+```{r connectDB, cache=TRUE, include=FALSE}
+library(DBI)
+
+con <- dbConnect(
+  RPostgres::Postgres(),
+  host = Sys.getenv("cranloghost"),
+  dbname = "cranlogs",
+  user = "guest",
+  password = Sys.getenv("cranlogpw")
+)
+
+DBI::dbListTables(con)
+#> [1] "cran_logs"
+cran_logs <- tbl(con, "cran_logs")
+```
+
+# Data sanity check  
+
+
+The data used in this study came from the [CRAN package download logs]<http://cran-logs.rstudio.com>. It contains daily log files for r packages downloads from 2012-10-01 to the most recent date. As there are potential bots downloads that inflates the number of r package downloads, the data used in this study has been processed which removes the downloads that came from the same ip address with identical computer systems and architecture. Since the data are processed, it is necessary to check the sanity of the data. This section will be focusing on the continuity of the data and whether there are repeated dates. The data structure of the cranlog files follows a file name according to the date that the data is collected. Inside the cranlog file, it includes a column that records the time and date of each activity. The table below (ref:cranlogfiledemo) shows the first six rows of a cranlog file recorded on the 2021-07-04. The code is displayed above by clicking on the CODE button just above the right corner of this plot. All of the cranlog files follows the same data structure. The processed data includes package name, the number of unique downloads per day and the number of total downloads per day. 
+
+
+```{r cranlogfile,message=FALSE,warning=FALSE, fig.height = 8, fig.width = 18, fig.cap = "(ref:cranlogfiledemo)"}
+X2021_07_04_csv <- read_csv(here("docs/data/2021-07-04.csv.gz"))
+
+head(X2021_07_04_csv) %>% 
+    knitr::kable(caption = "Cranlog file example - 2012-07-04") 
+```
+
+## The continuity of the data 
+
+
+The code chunk below checks the continuity of the dates. The dataset `daily_total` is grouped by the dates recorded in the cranlog files where the `daily_total_file` is grouped by the file name dates. By checking the continuity of the dates, there are three missing dates in the `daily_total` dataset. However, when we group the number of total downloads by the file name date, there is no missing values. This is the case where when the cranlog file first started recording all the downloads, the data was not being recorded correctly.
+
+```{r datecontinue, cache=TRUE, class.source = 'fold-show'}
+# getting the daily total and unique downloads from the local database
+con <- dbConnect(
+  RPostgres::Postgres(),
+  host = Sys.getenv("cranloghost"),
+  dbname = "cranlogs",
+  user = "guest",
+  password = Sys.getenv("cranlogpw")
+)
+
+cran_logs <- tbl(con, "cran_logs")
+
+daily_total <- cran_logs %>%
+  group_by(date) %>%
+  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>%
+  collect() %>%
+  mutate(across(c("total_unique", "total_download"), as.integer))
+
+# getting the daily total and unique downloads from the local database according to the file names
+# because there are dates that is not matching with the file name, so here we recognise the
+
+daily_total_file <- cran_logs %>%
+  group_by(file_date) %>%
+  summarise(adjust_unique = sum(n_unique), adjust_download = sum(n_total)) %>%
+  collect() %>%
+  mutate(across(c("adjust_unique", "adjust_download"), as.integer))
+
+# before moving on to other data sanity check, check the continuity of the dates
+
+seq_date <- daily_total$date
+range_date <- seq(min(seq_date), max(seq_date), by = 1)
+missing_dates <- range_date[!range_date %in% seq_date] 
+
+seq_date_file <- daily_total_file$file_date
+range_date_file <- seq(min(seq_date_file), max(seq_date_file), by = 1)
+missing_filedates <- range_date_file[!range_date_file %in% seq_date_file] 
+
+missing_dates
+missing_filedates
+```
+
+## Two dates recorded in one cranlog file 
+
+The below example shows that for each cranlog file, there are two dates recorded. One is the file name and the other is the date for each activity when happening. Ideally, all the activities recorded in one cranlog file should only contains the activities that happened on the date which is consistent with the file name. From the preliminary data investigation, there are some data files that contains activities cross two days. The table below shows all the file that contains unmatch dates. Majority of the unmatch dates occurs before 2013. Since the CRAN only starts recording the daily r packages downloads on the first of October 2012, there might be some data recording problems that results these unmatching file name and dates. As the 2012 data might exists potential data collecting problems, 2012 data is treated differently with the rest of the data.    
+
+```{r nonmatchexample, cache=TRUE, class.source = 'fold-show'}
+library(lubridate)
+#url_diff <- paste0('http://cran-logs.rstudio.com/', "2014", '/', "2014-05-22"	, '.csv.gz')
+# You can then use download.file to download into a directory.
+
+#destfile <- paste0(here("data/derived/"),"2014-05-22	", '.csv.gz')
+
+#download.file(url_diff,destfile)
+
+X2014_05_22_csv <- read_csv(here("data/derived/2014-05-22\t.csv.gz"))
+example_1 <- X2014_05_22_csv %>% 
+  filter(date == "2014-05-21") %>% 
+  head() 
+example_2 <- X2014_05_22_csv %>% 
+  filter(date == "2014-05-22") %>% 
+  head()
+example_unmatch <- rbind(example_1,example_2)
+
+example_unmatch %>% 
+  DT::datatable(caption = "Example where the one file contains two dates ")
+```
+
+
+```{r nonmatch, cache=TRUE, class.source = 'fold-show'}
+
+con <- dbConnect(
+  RPostgres::Postgres(),
+  host = Sys.getenv("cranloghost"),
+  dbname = "cranlogs",
+  user = "guest",
+  password = Sys.getenv("cranlogpw")
+)
+
+cran_logs <- tbl(con, "cran_logs")
+nonmatch <- cran_logs %>%
+  filter(file_date != date) %>%
+  collect() 
+
+nonmatch_count <- nonmatch %>% 
+  count(file_date,date) %>% 
+  mutate(across(c("n"), as.integer))
+
+DT::datatable(nonmatch_count[1:2], caption = "File name is not matching the date inside cranlog file")
+```
+
+Excluding the 2012 cranlog files, there are still some file names with file dates not matching with the date recorded in the log file. The table below illustrates that the file named as `2014-05-2` contains data on May 21st and May 22ed. One potential reason for this misrecognition of the date could result from the different timezones. As cranlog file include all the r package downloads from the CRAN mirror across the world, it is possible for some time to be identified as the following date in some timezone. As to this matter, it is more accurate to identify these downloads as the second day downloads.  
+
+## Cross referece processed data with the `cranlogs` package 
+
+The reference source we are comparing with is the download logs provided by [cranlogs]<https://github.com/r-hub/cranlogs> package. The `cranlogs` package provides functions to retreat the number of total r packages downloads on a certain day and the number of downloads through out time for individual packages. Due to the imitated computation power, this data sanity check focus on the number of total r packages downloads per day. By comparing the processed total r packages downloads per day with the `cranlogs` numbers, there are 708 days which are not matching with the `cranlogs` numbers. This is due to the mechanism of treading the `NA` packages. Before 2014, `cranlogs` does not count for the downlands where the package name is missing. After 2014, `cranlogs` starts to count for the number of downloads including the NA packages. For example ` `r cran_downloads(packages = "NA", from = "2014-01-01", to = "2014-01-01")` `, it returns 2 downloads for package with missing values. After adjusting for the NA packages, there are only 23 days left there the number of total r packages downloads for the day is not matching with the `cranlogs` downloads. This could be the results where the one cranlog file contains two days entries. As the data was processed individually, and the number of total daily downloads is grouped by the date which is recorded in the file, thus this might create different number of downloads for each day. Thus, for the purpose of unifying the date, the number of daily downloads will be calculated according to the file name. 
+
+After deep dive into the original cranlog files, we found that there are some cranlog files that are identical but recorded twice. i.e. `2012-10-13` and `2012-10-15`. They both contains the data that is on the `2012-10-11` but recorded as two separate dates. 
+
+
+```{r downloadsamefiles,message=FALSE,cache=TRUE,warning=FALSE,class.source = 'fold-show', eval = FALSE}
+samefile <- c("2012-10-12","2012-10-15")
+
+urls <- paste0('http://cran-logs.rstudio.com/', "2012", '/', samefile, '.csv.gz')
+
+# You can then use download.file to download into a directory.
+
+destfile <- paste0(here("docs/data/"), samefile, '.csv.gz')
+
+download.file(urls,destfile)
+```
+
+
+
+```{r,message=FALSE,cache=TRUE,warning=FALSE}
+X2012_10_12csv <- read_csv(here("docs/data/2012-10-12.csv.gz"))
+X2012_10_15csv <- read_csv(here("docs/data/2012-10-15.csv.gz"))
+
+
+```
+
+
+
+The chunk below are the code run on the home server and extracted the results. 
+
+
+```{r processedvscranlog, message=FALSE,cache=TRUE,warning=FALSE,class.source = 'fold-show'}
+# compare processed daily total downloads with the cranlog package number
+processed_cranlog <- daily_total %>%
+  left_join(
+    cran_downloads(from = "2012-10-01", to = "2021-08-22"),
+    by = "date"
+  )
+
+processed_cranlog <- processed_cranlog %>%
+  mutate(diff = count - total_download)
+
+# identify the dates where the processed data is not equal to the cranlog downloads
+processed_diff <- processed_cranlog %>%
+  filter(diff != 0)
+
+
+
+file_cranlog <- daily_total_file %>%
+  rename(date = file_date) %>%
+  left_join(
+    cran_downloads(from = "2012-10-01", to = "2021-08-22"),
+    by = "date"
+  )
+
+processed_cranlog_file <- file_cranlog %>%
+  mutate(diff = count - adjust_download)
+
+file_diff <- processed_cranlog_file %>%
+  filter(diff != 0)
+```
+
+
+
+```{r,eval = FALSE, message=FALSE,cache=TRUE,warning=FALSE,class.source = 'fold-show'}
+# processed from the home server
+
+all_file <- list.files(
+  path = "cranlogs", pattern = ".csv.gz$",
+  full.names = TRUE
+)
+
+diff_file <- paste0("cranlogs/", processed_diff$date, ".csv.gz")
+
+diff_file_name <- all_file[all_file %in% diff_file]
+
+
+names(diff_file_name) <- str_remove(basename(diff_file), "\\.csv\\.gz$")
+
+diff_date <- tibble(unique(output$date))
+
+for (i in (1:708)) {
+  # load in the cranlog file
+  diff_cranlog <- lapply(diff_file_name[i], read_csv)
+  output <- bind_rows(diff_cranlog, .id = "file")
+  # get the no. of na packages
+  isna <- output %>%
+    filter(is.na(package)) %>%
+    nrow()
+  # add the no.of NA packages to the total downloads from cranlog
+  cranlog <- isna + cran_downloads(from = max(unique(output$date)), to = max(unique(output$date)))$count
+  na <- daily_total %>%
+    filter(date == max(unique(output$date))) %>%
+    pull(total_download)
+  # compare with the processed data
+  tf <- (cranlog == na)
+  if (tf == "TRUE") {
+    i <- i + 1
+  } else {
+    diff_date <- rbind(diff_date, as.data.frame(unique(output$date)))
+    i <- i + 1
+  }
+}
+
+
+```
+
+```{r, eval = FALSE, message=FALSE,cache=TRUE,warning=FALSE,class.source = 'fold-show'}
+# for the total downloads grouped by file name 
+all_file <- list.files(
+  path = "cranlogs", pattern = ".csv.gz$",
+  full.names = TRUE
+)
+
+diff_file <- paste0("cranlogs/", file_diff$date, ".csv.gz")
+
+diff_file_name <- all_file[all_file %in% diff_file]
+
+
+names(diff_file_name) <- str_remove(basename(diff_file), "\\.csv\\.gz$")
+
+diff_date_file <- tibble()
+
+for (i in (1:743)) {
+  # load in the cranlog file
+  diff_cranlog <- lapply(diff_file_name[i], read_csv)
+  output <- bind_rows(diff_cranlog, .id = "file")
+  # get the no. of na packages
+  isna <- output %>%
+    filter(is.na(package)) %>%
+    nrow()
+  # add the no.of NA packages to the total downloads from cranlog
+  cranlog <- isna + cran_downloads(from = as.Date(names(diff_file_name[i])), to = as.Date(names(diff_file_name[i])))$count
+  na <- daily_total_file %>%
+    filter(file_date == as.Date(names(diff_file_name[i]))) %>%
+    pull(adjust_download)
+  # compare with the processed data
+  tf <- (cranlog == na)
+  if (tf == "TRUE") {
+    i <- i + 1
+  } else {
+    diff_date_file <- rbind(diff_date_file, as.data.frame(unique(output$date)))
+    i <- i + 1
+  }
+}
+```
+
+
+
+```{r, message=FALSE,cache=TRUE,warning=FALSE,class.source = 'fold-show'}
+# The different date after the computing on the server
+diff_date <- structure(list(`unique(output$date)` = structure(c(
+  17379, 15619,
+  15624, 15706, 15848, 15848, 15849, 15853, 15853, 15854, 15959,
+  15959, 15960, 15977, 16206, 16207, 16206, 16207, 16208, 16211,
+  16211, 16212, 17379
+), class = "Date")), row.names = c(NA, -23L), class = c("tbl_df", "tbl", "data.frame"))
+```
+
+
+
+```{r,message=FALSE,cache=TRUE,warning=FALSE,class.source = 'fold-show'}
+# The different date after the computing on the server
+# grouped by file name rather than date 
+#The reasons behind these unequal downloads between the processed data and the cranlog data results from the treatment of `NA` packages. In the cranlog files, there are some packages that have missing names which results `NA` values for the package column. Before some time in 2014, the CRAN methods of capturing the number of packages download removes the `NA` values. For the data used in this study did not remove the `NA` values. After 2014, the CRAN starts to record number of downloads for each day. After adding back the number of `NA` package downloads, there are 16 days' total download is not matching with the cranlog downloads. 
+
+diff_date_file <- structure(list(`unique(output$date)` = structure(c(15614, 15619, 
+15620, 15621, 15620, 15624, 15621, 15625, 15624, 15626, 15627, 
+15628, 15629, 15630, 15631, 15632, 15633, 15634, 15635, 15636, 
+15637, 15638, 15639, 15640, 15641, 15642, 15643, 15644, 15645, 
+15646, 15647, 15648, 15649, 15650, 15651, 15652, 15653, 15654, 
+15655, 15656, 15657, 15658, 15659, 15660, 15661, 15662, 15663, 
+15664, 15665, 15666, 15667, 15668, 15669, 15670, 15671, 15672, 
+15673, 15674, 15675, 15676, 15677, 15678, 15679, 15680, 15681, 
+15682, 15683, 15684, 15685, 15686, 15687, 15688, 15689, 15690, 
+15691, 15692, 15693, 15694, 15695, 15696, 15697, 15698, 15699, 
+15700, 15701, 15702, 15706, 15848, 15848, 15849, 15853, 15853, 
+15854, 15959, 15959, 15960, 15977, 16206, 16207, 16206, 16207, 
+16208, 16211, 16211, 16212, 17379, 18102, 18103, 18102, 18104, 
+18103, 18105, 18104, 18106, 18105, 18107, 18106, 18108, 18107, 
+18109, 18108, 18110, 18111, 18110, 18113, 18114, 18113), class = "Date")), row.names = c(NA, 
+-127L), class = c("tbl_df", "tbl", "data.frame"))
+```
+
+<details>
+
+
