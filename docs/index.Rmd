@@ -1,5 +1,6 @@
 ---
-title: "Appendix for R package downloads"
+title: "Data sanity check"
+subtitle: "Supplementary materials for the paper: 'cranscrub: an R-package for scrubbing the CRAN downloads logs into a polished state' "
 author:
   - name: Danyang Dai 
     affiliation: Department of Econometrics and Business Statistics, Monash University, Melbourne, VIC 3800
@@ -18,9 +19,9 @@ output:
 
 **Table of contents** 
 
-- [The continuity of the data]. 
-- [Two dates recorded in one cranlog file]. 
-- [Cross referece processed data with the `cranlogs` package]. 
+- [Checking for missing dates]. 
+- [Checking for duplicated dates]. 
+- [Checking for accuracy of the processed data with the `cranlogs` package]. 
 
 <details>
 
@@ -80,7 +81,7 @@ head(X2021_07_04_csv) %>%
     knitr::kable(caption = "Cranlog file example - 2012-07-04") 
 ```
 
-## The continuity of the data {#id}
+## Checking for missing dates {#id}
 
 The code chunk below checks the continuity of the dates. The dataset `daily_total` is grouped by the dates recorded in the cranlog files where the `daily_total_file` is grouped by the file name dates. By checking the continuity of the dates, there are three missing dates in the `daily_total` dataset. However, when we group the number of total downloads by the file name date, there is no missing values. This is the case where when the cranlog file first started recording all the downloads, the data was not being recorded correctly.
 
@@ -125,7 +126,7 @@ missing_dates
 missing_filedates
 ```
 
-## Two dates recorded in one cranlog file {#id}
+## Checking for duplicated dates {#id}
 
 The below example shows that for each cranlog file, there are two dates recorded. One is the file name and the other is the date for each activity when happening. Ideally, all the activities recorded in one cranlog file should only contains the activities that happened on the date which is consistent with the file name. From the preliminary data investigation, there are some data files that contains activities cross two days. The table below shows all the file that contains unmatch dates. Majority of the unmatch dates occurs before 2013. Since the CRAN only starts recording the daily r packages downloads on the first of October 2012, there might be some data recording problems that results these unmatching file name and dates. As the 2012 data might exists potential data collecting problems, 2012 data is treated differently with the rest of the data.    
 
@@ -176,7 +177,7 @@ DT::datatable(nonmatch_count[1:2], caption = "File name is not matching the date
 
 Excluding the 2012 cranlog files, there are still some file names with file dates not matching with the date recorded in the log file. The table below illustrates that the file named as `2014-05-2` contains data on May 21st and May 22ed. One potential reason for this misrecognition of the date could result from the different timezones. As cranlog file include all the r package downloads from the CRAN mirror across the world, it is possible for some time to be identified as the following date in some timezone. As to this matter, it is more accurate to identify these downloads as the second day downloads.  
 
-## Cross referece processed data with the `cranlogs` package {#id}
+## Checking for accuracy of the processed data with the `cranlogs` package {#id}
 
 The reference source we are comparing with is the download logs provided by [cranlogs](https://github.com/r-hub/cranlogs) package. The `cranlogs` package provides functions to retreat the number of total r packages downloads on a certain day and the number of downloads through out time for individual packages. Due to the imitated computation power, this data sanity check focus on the number of total r packages downloads per day. By comparing the processed total r packages downloads per day with the `cranlogs` numbers, there are 708 days which are not matching with the `cranlogs` numbers. This is due to the mechanism of treading the `NA` packages. Before 2014, `cranlogs` does not count for the downlands where the package name is missing. After 2014, `cranlogs` starts to count for the number of downloads including the NA packages. For example ` `r cran_downloads(packages = "NA", from = "2014-01-01", to = "2014-01-01")` `, it returns 2 downloads for package with missing values. After adjusting for the NA packages, there are only 23 days left there the number of total r packages downloads for the day is not matching with the `cranlogs` downloads. This could be the results where the one cranlog file contains two days entries. As the data was processed individually, and the number of total daily downloads is grouped by the date which is recorded in the file, thus this might create different number of downloads for each day. Thus, for the purpose of unifying the date, the number of daily downloads will be calculated according to the file name. 
 
