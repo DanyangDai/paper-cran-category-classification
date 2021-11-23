@@ -1,8 +1,9 @@
 ---
 title: "R package downloads: what does it mean?"
 author:
-  # Dai Dai to add her own name here
   - name: Danyang Dai
+  - name: Yiwen Zhang
+  - name: Hien Nguyen
   - name: Emi Tanaka
     affiliation: Monash University
     address:
@@ -98,10 +99,17 @@ rstudio<- str_detect(author$Author, "RStudio") %>%
 
 # Introduction
 
+Today R is greatly enhanced by its thriving community that include dedicated group of core developers, over `r scales::label_number_si(accuracy=0.1)(nrow(distinct(db,Author,.keep_all= TRUE)))` authors that contributed directly or indirectly to the development of R-packages, and millions of users worldwide. There are now over `r scales::label_number_si(accuracy=0.1)(nrow(db))` R-packages and if the past trend is any indicator of future develoments, we would continue to see a rising number of contributed R packages. 
+
+There is a growing recognition of software packages as a valuable output by academic institutions and companies. 
+
+
+
+
 "R packages are the result of scholarly activity and as such constitute scholarly resources which must be clearly identifiable for the respective scientific communities." said by @hornik2012did. The R community has grown in the past two decades. Since R was first introduced in the August of 1993 with its first official release in the June of 1995 [@ihaka:1996], there was only a small group of core developers. In April of 1997, the Comprehensive R Archive Network (CRAN) was established as the official R-packages repository, with 3 mirror sites [@firstcran]. After years of continues thrive of R packages developments, today R is greatly enhanced by over `r scales::label_number_si(accuracy=0.1)(nrow(db))` R-packages contributed by `r scales::label_number_si(accuracy=0.1)(nrow(distinct(db,Author,.keep_all= TRUE)))` of developers all over the world. Among all the available R packages, RStudio has the copyright to `r rstudio` R packages. Majority of the R packages are developed and owned by individual author who has been contributing and sharing their knowledge with the public. It is important to recognise the contribution that these R package developers made to the scientific and academic communities. One aspect of the quality metrics for R package is  number of downloads. @rhub suggests that download counts are a popular way that indicates a package's importance and quality. In general, the more downloads, the more important and popular the package gets. There are a few different source repositories to install and download R-packages which includes Bioconductor, Gitlab, GitHub, R-Forge and 106 CRAN mirrors in 49 regions. Of all the CRAN mirrors, the daily download counts for each package is only readily available from the RStudio CRAN mirror. This is also the default CRAN mirror if not deliberately chosen a CRAN mirror in RStudio [@rstudiocran]. The RStudio CRAN mirror is likely to have the most users as the default mirror for R users. From the cranlogs package, the number of downloads for each package is easily assessable. 
 
 
-```{r totaldownload, fig.cap = "The daily total number of R pakcages downloads from October 2012 to July 2021. It is clear that R packages has become popular with the number of R packages downloaded everyday increasing rapidly. There are two unusual number of R package download spikes happened in 2014 and 2018.", cache=TRUE}
+```{r totaldownload, fig.cap = "The daily total number of R package downloads from October 2012 to July 2021. It is clear that R packages has become popular with the number of R packages downloaded everyday increasing rapidly. There are two unusual number of R package download spikes happened in 2014 and 2018.", cache=TRUE}
 total_downloads %>%
   ggplot()  + geom_line(aes(date, count/1000))+
   geom_smooth(aes(date, count/1000),stat = "smooth") +
