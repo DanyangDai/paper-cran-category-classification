@@ -1,6 +1,6 @@
 
 start <- as.Date('2012-10-01')
-today <- as.Date('2021-08-22')
+today <- as.Date('2022-03-01')
 all_days <- seq(start, today, by = 'day')
 year <- as.POSIXlt(all_days)$year + 1900
 urls <- paste0('http://cran-logs.rstudio.com/', year, '/', all_days, '.csv.gz')
@@ -51,3 +51,6 @@ process_data <- function(paths) {
 
 handlers("progress")
 with_progress(process_data(paths))
+
+# psql
+# COPY cran_logs FROM PROGRAM 'tail --quiet -n +2 /cranlogs/*.csv' csv;
