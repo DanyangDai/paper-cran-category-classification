@@ -1,0 +1,199 @@
+---
+title: "Untitled"
+author: "Danyang Dai"
+date: "28/03/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# load in packages 
+
+library(tidyverse)
+library(lubridate)
+library(cranlogs)
+library(DBI)
+
+```
+
+
+```{r}
+# connect to the data base
+con <- dbConnect(
+  RPostgres::Postgres(),
+  host = "db.mitchelloharawild.com",
+  dbname = "cranlogs",
+  user = "guest",
+  password = "JNoGzAc9V5yxdsU9"
+)
+
+DBI::dbListTables(con)
+#> [1] "cran_logs"
+cran_logs <- tbl(con, "cran_logs")
+```
+
+```{r}
+# duplicated downloads over time 
+
+daily_download <- cran_logs %>% 
+  group_by(file_date) %>% 
+  summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
+  collect()
+
+
+daily_download <- daily_download %>% 
+  mutate(difference = download - unique) %>% 
+  mutate(download = as.integer(download)) %>% 
+  mutate(unique = as.integer(unique))
+
+
+daily_download %>% 
+  ggplot(aes(x = file_date)) +
+  geom_line(aes(y = download), color = "red") + 
+  geom_line(aes(y = unique), color = "blue") + 
+  geom_line(aes(y = difference), color = "green")
+```
+
+```{r}
+download_2021 <- cran_logs %>% 
+  filter(file_date >= "2021-01-01" & file_date <= "2021-12-31") %>%
+  group_by(file_date,package) %>% 
+  summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
+  collect()
+
+
+total_2021_pkg <-download_2021 %>% 
+  group_by(package) %>% 
+  summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
+  mutate(annual_total = as.integer(annual_total),
+         annual_unique = as.integer(annual_unique))
+
+total_2021_pkg <- total_2021_pkg %>% 
+  mutate(diff = annual_total - annual_unique) %>% 
+  mutate(precentage = (annual_unique/annual_total)*100)
+```
+
+
+```{r}
+# ggplot has the most duplicated downloads in 2021
+total_2021_pkg <- total_2021_pkg %>% 
+  arrange(-annual_total) %>% 
+  mutate(rank_total = rep(1:nrow(total_2021_pkg)))
+
+total_2021_pkg <- total_2021_pkg %>% 
+  arrange(-annual_unique) %>% 
+  mutate(rank_unique = rep(1:nrow(total_2021_pkg))) %>% 
+  mutate(rank_diff = rank_total - rank_unique)
+```
+
+```{r}
+total_2021_pkg %>% 
+  ggplot(aes(x=precentage))+
+  geom_histogram()
+```
+
+
+```{r}
+get_taskview <- function(package){
+  return(ctv:::.get_pkgs_from_ctv_or_repos(package,repos = "http://cran.rstudio.com/")[[1]])
+}
+```
+
+
+```{r}
+exp_des <- get_taskview("ExperimentalDesign")
+ecomtric <- get_taskview("Econometrics")
+ts <- get_taskview("TimeSeries")
+gm <- get_taskview("GraphicalModels")
+dist <- get_taskview("Distributions")
+teachs <- get_taskview("TeachingStatistics")
+```
+
+```{r}
+download_2021 <- download_2021 %>% 
+  mutate(taskview = case_when(
+    package %in% exp_des ~ "ExperimentalDesign",
+    package %in% ecomtric ~ "Econometrics",
+    package %in% ts ~ "TimeSeries",
+    package %in% gm ~ "GraphicalModels",
+    package %in% dist ~ "Distributions",
+    package %in% teachs ~ "TeachingStatistics"
+  ))
+```
+
+```{r}
+ed_2021 <- download_2021 %>% 
+  filter(taskview == "ExperimentalDesign") %>% 
+  group_by(package) %>% 
+  summarise(total = sum(download), unique = sum(unique)) %>% 
+  arrange(-total) 
+
+ed_2021 <- ed_2021 %>% 
+  mutate(rank_total = rep(1:nrow(ed_2021))) 
+
+ed_2021 <- ed_2021 %>% 
+  arrange(-unique) %>% 
+  mutate(rank_unique = rep(1:nrow(ed_2021))) %>% 
+  mutate(precentage = (unique/total)*100) %>% 
+  mutate(rank_diff = rank_total - rank_unique)
+```
+
+```{r}
+ecom_2021 <- download_2021 %>% 
+  filter(taskview == "Econometrics") %>% 
+  group_by(package) %>% 
+  summarise(total = sum(download), unique = sum(unique)) %>% 
+  arrange(-total)
+
+ecom_2021 <- ecom_2021 %>% 
+  mutate(rank_total = rep(1:nrow(ecom_2021)))
+
+ecom_2021 <- ecom_2021 %>% 
+  arrange(-unique) %>% 
+  mutate(rank_unique = rep(1:nrow(ecom_2021))) %>% 
+  mutate(precentage = (unique/total)*100) %>% 
+  mutate(rank_diff = rank_total - rank_unique)
+```
+
+```{r}
+ts_2021 <- download_2021 %>% 
+  filter(taskview == "TimeSeries") %>% 
+  group_by(package) %>% 
+  summarise(total = sum(download), unique = sum(unique)) %>% 
+  arrange(-total)
+
+ts_2021 <- ts_2021 %>% 
+  mutate(rank_total = rep(1:nrow(ts_2021)))
+
+ts_2021 <- ts_2021 %>% 
+  arrange(-unique) %>% 
+  mutate(rank_unique = rep(1:nrow(ts_2021))) %>% 
+  mutate(precentage = (unique/total)*100) %>% 
+  mutate(rank_diff = rank_total - rank_unique)
+```
+
+```{r}
+gm_2021 <- download_2021 %>% 
+  filter(taskview == "GraphicalModels") %>% 
+  group_by(package) %>% 
+  summarise(total = sum(download), unique = sum(unique)) %>% 
+  arrange(-total)
+
+gm_2021 <- gm_2021 %>% 
+  mutate(rank_total = rep(1:nrow(gm_2021)))
+
+gm_2021 <- gm_2021 %>% 
+  arrange(-unique) %>% 
+  mutate(rank_unique = rep(1:nrow(gm_2021))) %>% 
+  mutate(precentage = (unique/total)*100) %>% 
+  mutate(rank_diff = rank_total - rank_unique)
+```
+
+```{r}
+
+```
+
