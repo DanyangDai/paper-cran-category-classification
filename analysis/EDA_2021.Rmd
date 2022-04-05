@@ -98,102 +98,262 @@ total_2021_pkg %>%
 
 
 ```{r}
-get_taskview <- function(package){
-  return(ctv:::.get_pkgs_from_ctv_or_repos(package,repos = "http://cran.rstudio.com/")[[1]])
-}
+download_2020 <- cran_logs %>% 
+  filter(file_date >= "2020-01-01" & file_date <= "2020-12-31") %>%
+  group_by(file_date,package) %>% 
+  summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
+  collect()
+
+download_2019 <- cran_logs %>% 
+  filter(file_date >= "2019-01-01" & file_date <= "2019-12-31") %>%
+  group_by(file_date,package) %>% 
+  summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
+  collect()
+
+download_2018 <- cran_logs %>% 
+  filter(file_date >= "2018-01-01" & file_date <= "2018-12-31") %>%
+  group_by(file_date,package) %>% 
+  summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
+  collect()
+
+
+download_2017 <- cran_logs %>% 
+  filter(file_date >= "2017-01-01" & file_date <= "2017-12-31") %>%
+  group_by(file_date,package) %>% 
+  summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
+  collect()
+
+download_2016 <- cran_logs %>% 
+  filter(file_date >= "2016-01-01" & file_date <= "2016-12-31") %>%
+  group_by(file_date,package) %>% 
+  summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
+  collect()
+
+download_2015 <- cran_logs %>% 
+  filter(file_date >= "2015-01-01" & file_date <= "2015-12-31") %>%
+  group_by(file_date,package) %>% 
+  summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
+  collect()
+
+download_2014 <- cran_logs %>% 
+  filter(file_date >= "2014-01-01" & file_date <= "2014-12-31") %>%
+  group_by(file_date,package) %>% 
+  summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
+  collect()
+
+download_2013 <- cran_logs %>% 
+  filter(file_date >= "2013-01-01" & file_date <= "2013-12-31") %>%
+  group_by(file_date,package) %>% 
+  summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
+  collect()
+
 ```
 
 
 ```{r}
-exp_des <- get_taskview("ExperimentalDesign")
-ecomtric <- get_taskview("Econometrics")
-ts <- get_taskview("TimeSeries")
-gm <- get_taskview("GraphicalModels")
-dist <- get_taskview("Distributions")
-teachs <- get_taskview("TeachingStatistics")
-```
-
-```{r}
-download_2021 <- download_2021 %>% 
-  mutate(taskview = case_when(
-    package %in% exp_des ~ "ExperimentalDesign",
-    package %in% ecomtric ~ "Econometrics",
-    package %in% ts ~ "TimeSeries",
-    package %in% gm ~ "GraphicalModels",
-    package %in% dist ~ "Distributions",
-    package %in% teachs ~ "TeachingStatistics"
-  ))
-```
-
-```{r}
-ed_2021 <- download_2021 %>% 
-  filter(taskview == "ExperimentalDesign") %>% 
+total_2020_pkg <-download_2020 %>% 
   group_by(package) %>% 
-  summarise(total = sum(download), unique = sum(unique)) %>% 
-  arrange(-total) 
+  summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
+  mutate(annual_total = as.integer(annual_total),
+         annual_unique = as.integer(annual_unique))
 
-ed_2021 <- ed_2021 %>% 
-  mutate(rank_total = rep(1:nrow(ed_2021))) 
+total_2020_pkg <- total_2020_pkg %>% 
+  mutate(diff = annual_total - annual_unique) %>% 
+  mutate(precentage = (annual_unique/annual_total)*100)
 
-ed_2021 <- ed_2021 %>% 
-  arrange(-unique) %>% 
-  mutate(rank_unique = rep(1:nrow(ed_2021))) %>% 
-  mutate(precentage = (unique/total)*100) %>% 
+total_2020_pkg <- total_2020_pkg %>% 
+  arrange(-annual_total) %>% 
+  mutate(rank_total = rep(1:nrow(total_2020_pkg)))
+
+total_2020_pkg <- total_2020_pkg %>% 
+  arrange(-annual_unique) %>% 
+  mutate(rank_unique = rep(1:nrow(total_2020_pkg))) %>% 
+  mutate(rank_diff = rank_total - rank_unique)
+
+
+```
+
+```{r}
+total_2019_pkg <-download_2019 %>% 
+  group_by(package) %>% 
+  summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
+  mutate(annual_total = as.integer(annual_total),
+         annual_unique = as.integer(annual_unique))
+
+total_2019_pkg <- total_2019_pkg %>% 
+  mutate(diff = annual_total - annual_unique) %>% 
+  mutate(precentage = (annual_unique/annual_total)*100)
+
+total_2019_pkg <- total_2019_pkg %>% 
+  arrange(-annual_total) %>% 
+  mutate(rank_total = rep(1:nrow(total_2019_pkg)))
+
+total_2019_pkg <- total_2019_pkg %>% 
+  arrange(-annual_unique) %>% 
+  mutate(rank_unique = rep(1:nrow(total_2019_pkg))) %>% 
+  mutate(rank_diff = rank_total - rank_unique)
+
+```
+
+
+```{r}
+total_2018_pkg <-download_2018 %>% 
+  group_by(package) %>% 
+  summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
+  mutate(annual_total = as.integer(annual_total),
+         annual_unique = as.integer(annual_unique))
+
+total_2018_pkg <- total_2018_pkg %>% 
+  mutate(diff = annual_total - annual_unique) %>% 
+  mutate(precentage = (annual_unique/annual_total)*100)
+
+total_2018_pkg <- total_2018_pkg %>% 
+  arrange(-annual_total) %>% 
+  mutate(rank_total = rep(1:nrow(total_2018_pkg)))
+
+total_2018_pkg <- total_2018_pkg %>% 
+  arrange(-annual_unique) %>% 
+  mutate(rank_unique = rep(1:nrow(total_2018_pkg))) %>% 
+  mutate(rank_diff = rank_total - rank_unique)
+
+```
+
+```{r}
+total_2017_pkg <-download_2017 %>% 
+  group_by(package) %>% 
+  summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
+  mutate(annual_total = as.integer(annual_total),
+         annual_unique = as.integer(annual_unique))
+
+total_2017_pkg <- total_2017_pkg %>% 
+  mutate(diff = annual_total - annual_unique) %>% 
+  mutate(precentage = (annual_unique/annual_total)*100)
+
+total_2017_pkg <- total_2017_pkg %>% 
+  arrange(-annual_total) %>% 
+  mutate(rank_total = rep(1:nrow(total_2017_pkg)))
+
+total_2017_pkg <- total_2017_pkg %>% 
+  arrange(-annual_unique) %>% 
+  mutate(rank_unique = rep(1:nrow(total_2017_pkg))) %>% 
+  mutate(rank_diff = rank_total - rank_unique)
+
+```
+
+```{r}
+total_2016_pkg <-download_2016 %>% 
+  group_by(package) %>% 
+  summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
+  mutate(annual_total = as.integer(annual_total),
+         annual_unique = as.integer(annual_unique))
+
+total_2016_pkg <- total_2016_pkg %>% 
+  mutate(diff = annual_total - annual_unique) %>% 
+  mutate(precentage = (annual_unique/annual_total)*100)
+
+total_2016_pkg <- total_2016_pkg %>% 
+  arrange(-annual_total) %>% 
+  mutate(rank_total = rep(1:nrow(total_2016_pkg)))
+
+total_2016_pkg <- total_2016_pkg %>% 
+  arrange(-annual_unique) %>% 
+  mutate(rank_unique = rep(1:nrow(total_2016_pkg))) %>% 
+  mutate(rank_diff = rank_total - rank_unique)
+
+```
+
+
+```{r}
+total_2015_pkg <-download_2015 %>% 
+  group_by(package) %>% 
+  summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
+  mutate(annual_total = as.integer(annual_total),
+         annual_unique = as.integer(annual_unique))
+
+total_2015_pkg <- total_2015_pkg %>% 
+  mutate(diff = annual_total - annual_unique) %>% 
+  mutate(precentage = (annual_unique/annual_total)*100)
+
+total_2015_pkg <- total_2015_pkg %>% 
+  arrange(-annual_total) %>% 
+  mutate(rank_total = rep(1:nrow(total_2015_pkg)))
+
+total_2015_pkg <- total_2015_pkg %>% 
+  arrange(-annual_unique) %>% 
+  mutate(rank_unique = rep(1:nrow(total_2015_pkg))) %>% 
+  mutate(rank_diff = rank_total - rank_unique)
+
+```
+
+
+```{r}
+total_2014_pkg <-download_2014 %>% 
+  group_by(package) %>% 
+  summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
+  mutate(annual_total = as.integer(annual_total),
+         annual_unique = as.integer(annual_unique))
+
+total_2014_pkg <- total_2014_pkg %>% 
+  mutate(diff = annual_total - annual_unique) %>% 
+  mutate(precentage = (annual_unique/annual_total)*100)
+
+total_2014_pkg <- total_2014_pkg %>% 
+  arrange(-annual_total) %>% 
+  mutate(rank_total = rep(1:nrow(total_2014_pkg)))
+
+total_2014_pkg <- total_2014_pkg %>% 
+  arrange(-annual_unique) %>% 
+  mutate(rank_unique = rep(1:nrow(total_2014_pkg))) %>% 
+  mutate(rank_diff = rank_total - rank_unique)
+
+```
+
+```{r}
+total_2013_pkg <-download_2013 %>% 
+  group_by(package) %>% 
+  summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
+  mutate(annual_total = as.integer(annual_total),
+         annual_unique = as.integer(annual_unique))
+
+total_2013_pkg <- total_2013_pkg %>% 
+  mutate(diff = annual_total - annual_unique) %>% 
+  mutate(precentage = (annual_unique/annual_total)*100)
+
+total_2013_pkg <- total_2013_pkg %>% 
+  arrange(-annual_total) %>% 
+  mutate(rank_total = rep(1:nrow(total_2013_pkg)))
+
+total_2013_pkg <- total_2013_pkg %>% 
+  arrange(-annual_unique) %>% 
+  mutate(rank_unique = rep(1:nrow(total_2013_pkg))) %>% 
   mutate(rank_diff = rank_total - rank_unique)
 ```
 
+
 ```{r}
-ecom_2021 <- download_2021 %>% 
-  filter(taskview == "Econometrics") %>% 
-  group_by(package) %>% 
-  summarise(total = sum(download), unique = sum(unique)) %>% 
-  arrange(-total)
-
-ecom_2021 <- ecom_2021 %>% 
-  mutate(rank_total = rep(1:nrow(ecom_2021)))
-
-ecom_2021 <- ecom_2021 %>% 
-  arrange(-unique) %>% 
-  mutate(rank_unique = rep(1:nrow(ecom_2021))) %>% 
-  mutate(precentage = (unique/total)*100) %>% 
-  mutate(rank_diff = rank_total - rank_unique)
+total_year <- bind_rows(
+  `2013`= total_2013_pkg,
+  `2014`= total_2014_pkg,
+  `2015`= total_2015_pkg,
+  `2016`= total_2016_pkg,
+  `2017`= total_2017_pkg,
+  `2018`= total_2018_pkg,
+  `2019`= total_2019_pkg,
+  `2020`= total_2020_pkg,
+  `2021`= total_2021_pkg,
+  .id = "year"
+)
 ```
 
 ```{r}
-ts_2021 <- download_2021 %>% 
-  filter(taskview == "TimeSeries") %>% 
-  group_by(package) %>% 
-  summarise(total = sum(download), unique = sum(unique)) %>% 
-  arrange(-total)
-
-ts_2021 <- ts_2021 %>% 
-  mutate(rank_total = rep(1:nrow(ts_2021)))
-
-ts_2021 <- ts_2021 %>% 
-  arrange(-unique) %>% 
-  mutate(rank_unique = rep(1:nrow(ts_2021))) %>% 
-  mutate(precentage = (unique/total)*100) %>% 
-  mutate(rank_diff = rank_total - rank_unique)
+total_year %>% ggplot(aes(y = precentage)) +
+  geom_boxplot(aes(x = year, color = year))
 ```
 
 ```{r}
-gm_2021 <- download_2021 %>% 
-  filter(taskview == "GraphicalModels") %>% 
-  group_by(package) %>% 
-  summarise(total = sum(download), unique = sum(unique)) %>% 
-  arrange(-total)
-
-gm_2021 <- gm_2021 %>% 
-  mutate(rank_total = rep(1:nrow(gm_2021)))
-
-gm_2021 <- gm_2021 %>% 
-  arrange(-unique) %>% 
-  mutate(rank_unique = rep(1:nrow(gm_2021))) %>% 
-  mutate(precentage = (unique/total)*100) %>% 
-  mutate(rank_diff = rank_total - rank_unique)
-```
-
-```{r}
-
+total_year %>% 
+  filter(rank_total <= 10) %>% 
+  ggplot(aes(y = precentage, x = year, color = package)) + 
+  geom_point()
 ```
 

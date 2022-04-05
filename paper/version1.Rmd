@@ -1,0 +1,408 @@
+---
+title: "R package downloads: what does it mean?"
+author:
+  # Dai Dai to add her own name here
+  - name: Danyang Dai
+  - name: Emi Tanaka
+    affiliation: Monash University
+    address:
+    - Monash University
+    - Clayton campus, VIC 3800, Australia
+    url: http://emitanaka.org/
+    orcid: 0000-0002-1455-259X
+    email:  emi.tanaka@monash.edu
+abstract: >
+    Abstract
+bibliography: paper.bib
+
+output: 
+  bookdown::html_document2:
+    theme: paper
+---
+
+```{r setup, cache = FALSE, include = FALSE}
+library(tidyverse)
+tocache <- TRUE
+knitr::opts_chunk$set(echo = FALSE, 
+                      cache = TRUE,
+                      cache.path = "cache/",
+                      fig.align = 'center', 
+                      fig.pos = 'htbp', 
+                      fig.width = 6,
+                      message = FALSE,
+                      warning = FALSE)
+
+theme_set(
+  theme(panel.background = element_rect(fill = NA),
+        panel.grid = element_line(color = "lightgray"),
+        axis.text = element_text(color = "black"),
+        axis.line = element_line(color = "black", size = 0.7),
+        axis.ticks.length = unit(1.4, "mm"),
+        axis.ticks = element_line(color = "black", size = 0.7),
+        axis.title = element_text(color = "black", face = "bold"),
+        strip.background = element_rect(color = "black",
+                                        fill = "black"),
+        strip.text = element_text(color = "white"),
+        plot.title.position = "plot",
+        plot.title = element_text(color = "black", hjust = 0)))
+```
+
+
+```{r load_packages}
+library(tidyverse)
+library(lubridate)
+library(rvest)
+library(glue)
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(feasts)
+library(cranlogs)
+library(stringr)
+library(bookdown)
+library(installr)
+library(data.table)
+library(scales)
+library(cranlogs)
+```
+
+
+```{r dataset, cache=TRUE}
+url <- "http://cran.rstudio.com/web/packages/packages.rds"
+db <- readRDS(url(url)) %>% 
+  as.data.frame()%>% 
+  mutate(Description = str_replace_all(Description, "\n", " "),
+         Description = str_squish(Description),
+         Title = str_replace_all(Title, "\n", " "))
+
+# getting the total R packages download numbers from 1998
+dd_start <- "2012-10-01"
+dd_end <- Sys.Date() - 1
+
+is_weekend <- function(date) {
+  weekdays(date) %in% c("Saturday", "Sunday")
+}
+
+total_downloads <- cran_downloads(from = dd_start, to = dd_end) %>% 
+  mutate(year = year(date),
+         day = yday(date),
+         weekend = is_weekend(date)) %>% 
+  filter(row_number() <= n()-1)
+
+n_pkgs <-nrow(db)
+author<-distinct(db,Author,.keep_all= TRUE)
+
+rstudio<- str_detect(author$Author, "RStudio") %>% 
+  sum(na.rm = TRUE)
+```
+
+
+```{r connectdb}
+library(DBI)
+
+con <- dbConnect(
+  RPostgres::Postgres(),
+  host = "db.mitchelloharawild.com",
+  dbname = "cranlogs",
+  user = "guest",
+  password = "JNoGzAc9V5yxdsU9"
+)
+
+DBI::dbListTables(con)
+#> [1] "cran_logs"
+cran_logs <- tbl(con, "cran_logs")
+```
+
+```{r}
+process_log <- cran_logs %>%collect()
+saveRDS(process_log, file = "processed_log.rds")
+
+```
+
+
+# Introduction
+
+"R packages are the result of scholarly activity and as such constitute scholarly resources which must be clearly identifiable for the respective scientific communities." said by @hornik2012did. The R community has grown in the past two decades. Since R was first introduced in the August of 1993 with its first official release in the June of 1995 [@ihaka:1996], there was only a small group of core developers. In April of 1997, the Comprehensive R Archive Network (CRAN) was established as the official R-packages repository, with 3 mirror sites [@firstcran]. After years of continues thrive of R packages developments, today R is greatly enhanced by over `r scales::label_number_si(accuracy=0.1)(nrow(db))` R-packages contributed by `r scales::label_number_si(accuracy=0.1)(nrow(distinct(db,Author,.keep_all= TRUE)))` of developers all over the world. Among all the available R packages, RStudio has the copyright to `r rstudio` R packages. Majority of the R packages are developed and owned by individual author who has been contributing and sharing their knowledge with the public. It is important to recognise the contribution that these R package developers made to the scientific and academic communities. One aspect of the quality metrics for R package is  number of downloads. @rhub suggests that download counts are a popular way that indicates a package's importance and quality. In general, the more downloads, the more important and popular the package gets. There are a few different source repositories to install and download R-packages which includes Bioconductor, Gitlab, GitHub, R-Forge and 106 CRAN mirrors in 49 regions. Of all the CRAN mirrors, the daily download counts for each package is only readily available from the RStudio CRAN mirror. This is also the default CRAN mirror if not deliberately chosen a CRAN mirror in RStudio [@rstudiocran]. The RStudio CRAN mirror is likely to have the most users as the default mirror for R users. From the cranlogs package, the number of downloads for each package is easily assessable. `
+
+
+```{r totaldownload, fig.cap = "The daily total number of R pakcages downloads from October 2012 to July 2021. It is clear that R packages has become popular with the number of R packages downloaded everyday increasing rapidly. There are two unusual number of R package download spikes happened in 2014 and 2018.", cache=TRUE}
+total_downloads %>%
+  ggplot()  + geom_line(aes(date, count/1000))+
+  geom_smooth(aes(date, count/1000),stat = "smooth") +
+  ggtitle("Daily number of R pakcages downloads") +
+  labs(y= "Number of R packages downloads", x = "Date")
+```
+
+```{r , cache=TRUE, message=FALSE,  results=FALSE, warning=FALSE, comment=FALSE}
+#spilk_2014_dir <- download_RStudio_CRAN_data(START = '2014-11-17',END = '2014-11-17', log_folder="/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/paper/Data")
+
+# read .gz compressed files form local directory
+#spilk_2014 <- read.csv("~/Documents/GitHub/paper-cran-category-classification/paper/Data/2014-11-17.csv.gz")
+
+#save(spilk_2014, file = "spilk_2014.RData")
+
+load(here::here("paper/spilk_2014.RData"))
+
+country_2014 <- spilk_2014 %>%  
+  group_by(country) %>% 
+  count()
+
+ID_2014 <- spilk_2014 %>%  
+  group_by(country,ip_id) %>% 
+  count()
+
+pkg_ID_2014 <- spilk_2014 %>%  
+  group_by(country,ip_id,package) %>% 
+  count()
+
+ido <- max(ID_2014$n)/sum(ID_2014$n)
+
+
+download_141116 <-total_downloads %>% 
+  filter(date == "2014-11-16")
+
+download_141118 <-total_downloads %>% 
+  filter(date == "2014-11-18")
+
+
+spilk_2014 %>% 
+  mutate(obsid = paste(country, ip_id, package)) %>% 
+  pull(obsid) %>% 
+  n_distinct()
+
+```
+
+```{r , cache=TRUE, message=FALSE,  results=FALSE, warning=FALSE, comment=FALSE}
+
+#spilk_2018_dir <- download_RStudio_CRAN_data(START = '2018-10-21',END = '2018-10-21', log_folder="/Users/daidanyang/Documents/GitHub/paper-cran-category-classification/paper/Data")
+
+# read .gz compressed files form local directory
+#spilk_2018 <- read_RStudio_CRAN_data(spilk_2018_dir)
+
+#save(spilk_2018, file = "spilk_2018.RData")
+
+load("~/Documents/GitHub/paper-cran-category-classification/paper/spilk_2018.RData")
+
+country_2018 <- spilk_2018 %>%  
+  group_by(country) %>% 
+  count()
+
+ID_2018 <- spilk_2018 %>%  
+  group_by(country,ip_id) %>% 
+  count()
+
+pkg_ID_18 <- spilk_2018 %>%  
+  group_by(country,ip_id,package) %>% 
+  count()
+
+
+top15 <- pkg_ID_18[pkg_ID_18$n %in% tail(sort(pkg_ID_18$n),15),]
+
+us_18 <- top15 %>% 
+  group_by(country,package) %>% 
+   summarise(n = sum(n))
+
+
+
+```
+
+
+Figure \@ref(fig:totaldownload) shows the daily total number of R packages downloads from October 2012 to July 2021. With the number of downloads increasing throughout time, it suggests that R users has been growing overtime and R packages has become wildly adapted. The two spikes happened in 2014 and 2018 are unusual and it might reveal more information behind the enormous number of R package downloads. From a closer look into the first spike which happened on 17th of November 2014, there are `r label_number_si(accuracy=0.1)(nrow(spilk_2014))` R packages downloaded on that day comparing with `r label_number_si(accuracy=0.1)(download_141116$count)` the day before and `r label_number_si(accuracy=0.1)(download_141118$count)` the day after. Looking into the individual IP address for all the downloads, one particular Indonesia IP is responsible for `r format(round(ido*100, 2), nsmall = 2)`\% of the R packages downloads on 17th of November 2014. This suspicious amount of downloads from one IP address can be considered as non-human activity. The second unusual spike happened on October 21st 2018. Total R packages download reached `r label_number_si(accuracy=0.1)(nrow(spilk_2018))` on that day. The one particular Indonesia IP address downloaded the same number of R packages as in 17th of November 2014 while a few US IP addresses is responsible for `r label_number_si(accuracy=0.1)(max(us_18$n))` of tidyverse downloads. This constitute  `r format(round(max(us_18$n)/nrow(spilk_2018)*100, 2), nsmall = 2)` \% of the total R packages downloads on the 21st of October 2018. The two uncommon R packages downloads spikes suggests that behind each R package download, it might not be an actual user. It is likely that computers are set to repetitively downloading some R packages. These bots downloads would inflate the actual R package downloads by human users. Thus, the number of R package downloads might not be an accurate benchmark for representing the quality of the R package as it can be manipulate.  
+
+```{r}
+# set relevent time 
+date_max <- as.Date("2021-08-22")
+date_week <- date_max - 7
+date_month <- date_max - 30
+date_year <- date_max - 365
+
+# function to get packages from each category 
+get_taskview <- function(package){
+  return(ctv:::.get_pkgs_from_ctv_or_repos(package,repos = "http://cran.rstudio.com/")[[1]])
+}
+
+exp_des <- get_taskview("ExperimentalDesign")
+
+exp_des_db <- cran_logs %>% 
+  filter(package %in% exp_des) %>% 
+  filter(date >= date_year) %>% 
+  group_by(package) %>% 
+  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>% 
+  collect() %>% 
+  mutate(across(c("total_unique", "total_download"), as.integer))
+
+# No obvious difference in ranking for the one month download 
+exp_des_db <- 
+  exp_des_db %>% 
+   mutate(rank_unique = dense_rank(desc(total_unique))) %>% 
+   mutate(rank_total = dense_rank(desc(total_download)))
+```
+
+
+```{r}
+ecomtric <- get_taskview("Econometrics")
+
+ecomtric_db <- cran_logs %>% 
+  filter(package %in% ecomtric) %>% 
+  filter(date >= date_month) %>% 
+  group_by(package) %>% 
+  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>% 
+  collect() %>% 
+  mutate(across(c("total_unique", "total_download"), as.integer))
+
+# some differences in ranking 
+ecomtric_db <- 
+  ecomtric_db %>% 
+   mutate(rank_unique = dense_rank(desc(total_unique))) %>% 
+   mutate(rank_total = dense_rank(desc(total_download)))
+```
+
+```{r}
+ed <- get_taskview("ExperimentalDesign")
+
+ed_db <- cran_logs %>% 
+  filter(package %in% ed) %>% 
+  filter(date >= date_month) %>% 
+  group_by(package) %>% 
+  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>% 
+  collect() %>% 
+  mutate(across(c("total_unique", "total_download"), as.integer))
+```
+
+
+```{r}
+ts <- get_taskview("TimeSeries")
+
+
+ts_db <- cran_logs %>% 
+  filter(package %in% ts) %>% 
+  filter(date >= date_month) %>% 
+  group_by(package) %>% 
+  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>% 
+  collect() %>% 
+  mutate(across(c("total_unique", "total_download"), as.integer))
+
+# interesting finding where zoo and lubridate are ranked differently from two methods 
+ts_db <- 
+   ts_db %>% 
+   mutate(rank_unique = dense_rank(desc(total_unique))) %>% 
+   mutate(rank_total = dense_rank(desc(total_download)))
+```
+
+```{r}
+gg <- get_taskview("Graphics")
+
+gg_db <- cran_logs %>% 
+  filter(package %in% gg) %>% 
+  filter(date >= date_month) %>% 
+  group_by(package) %>% 
+  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>% 
+  collect() %>% 
+  mutate(across(c("total_unique", "total_download"), as.integer))
+
+gg_db <- 
+   gg_db %>% 
+   mutate(rank_unique = dense_rank(desc(total_unique))) %>% 
+   mutate(rank_total = dense_rank(desc(total_download)))
+```
+
+
+```{r}
+# trend difference 
+ts_db_sum  <- cran_logs %>% 
+  filter(package %in% ts) %>%
+  filter(date >= date_year) %>% 
+  group_by(package) %>% 
+  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>% 
+  collect() %>% 
+  mutate(across(c("total_unique", "total_download"), as.integer))
+
+
+
+ts_top15_uique <- ts_db_sum %>% 
+  top_n(15, total_unique) %>% 
+  pull(package)
+
+ts_top15_total <- ts_db_sum %>% 
+  top_n(15, total_download) %>% 
+  pull(package)
+
+
+ts_top15_uique <-  cran_logs %>% 
+  filter(package %in% ts_top15_uique) %>%
+  collect() %>% 
+  mutate(across(c("n_unique", "n_total"), as.integer))
+
+ts_top15_total <-  cran_logs %>% 
+  filter(package %in% ts_top15_total) %>%
+  collect() %>% 
+  mutate(across(c("n_unique", "n_total"), as.integer))
+
+
+
+```
+
+
+```{r}
+ts_db_accum <- cran_logs %>% 
+  filter(package %in% ts) %>%
+  mutate(year = year(file_date)) %>% 
+  group_by(package,year) %>% 
+  summarise(total_unique = sum(n_unique), total_download = sum(n_total)) %>% 
+  mutate(across(c("total_unique", "total_download"), as.integer)) %>% 
+  ungroup() %>% 
+  group_by(year) %>% 
+  mutate(rank_unique = dense_rank(desc(total_unique))) %>% 
+  mutate(rank_total = dense_rank(desc(total_download))) %>% 
+  collect() 
+```
+
+```{r}
+ts_db_accum <- ts_db_accum %>% 
+  mutate(diff = abs(as.integer(rank_total - rank_unique)))
+
+ts_db_accum %>% 
+  filter(package %in% c("forecast","tseries","fable")) %>% 
+  ggplot(aes(x=year, y = diff,color = package)) + 
+  geom_line()
+
+ts_db_accum %>% 
+  group_by(year) %>% 
+  summarise(total_diff = sum(diff)) %>% 
+  ggplot(aes(x = year, y = total_diff)) +
+  geom_line()
+```
+
+
+```{r}
+ts_db_accum %>% 
+  filter(year == 2020) %>% 
+  group_by(package) %>% 
+  mutate(total_diff_pkg = sum(diff)) %>% 
+  ungroup() 
+
+
+%>% 
+  ggplot(aes(x = rank_total, y = total_diff_pkg))+ 
+  geom_line()
+
+
+```
+
+
+In order to remove the potential bots downlands that inflates that number of R package downloads, the data used in this research removes the duplicate downloads from the same computer ip address with the same operating system and architecture. After 
+
+
+
+
+# The CRAN log files
+
+
+# Data cleaning and processing 
+
+
+# Comparison of the scrubbed with the orginal data 
+
+
+# Discussion
+
