@@ -17,6 +17,7 @@ library(tidyverse)
 library(lubridate)
 library(cranlogs)
 library(DBI)
+library(rvest)
 
 ```
 
@@ -58,6 +59,25 @@ daily_download %>%
   geom_line(aes(y = difference), color = "green")
 ```
 
+
+```{r}
+url = 'https://cran.r-project.org/web/packages/available_packages_by_date.html'
+
+CRANpage <- read_html(url)
+tbls <- html_nodes(CRANpage, "table") # since HTML is in table; no need to scrape td/tr elements
+table1 <- html_table(tbls[1], fill = TRUE)
+dd <- data.frame(table1[1])
+dd$Date <- as.Date(dd$Date)
+first_relase <- dd %>% 
+  rename(package = Package)
+
+rm(list = Filter(exists, c("packageNames")))
+packageNames <- dd$Package
+```
+
+
+
+
 ```{r}
 download_2021 <- cran_logs %>% 
   filter(file_date >= "2021-01-01" & file_date <= "2021-12-31") %>%
@@ -68,7 +88,7 @@ download_2021 <- cran_logs %>%
 
 total_2021_pkg <-download_2021 %>% 
   group_by(package) %>% 
-  summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
+  summarise(annual_total = sum(download), annual_unique =   sum(unique)) %>% 
   mutate(annual_total = as.integer(annual_total),
          annual_unique = as.integer(annual_unique))
 
@@ -87,7 +107,11 @@ total_2021_pkg <- total_2021_pkg %>%
 total_2021_pkg <- total_2021_pkg %>% 
   arrange(-annual_unique) %>% 
   mutate(rank_unique = rep(1:nrow(total_2021_pkg))) %>% 
-  mutate(rank_diff = rank_total - rank_unique)
+  mutate(rank_diff = rank_total - rank_unique) 
+
+total_2021_pkg <- total_2021_pkg %>% 
+  left_join(first_relase, key = "package") %>% 
+  filter(Date <= "2021-01-01")
 ```
 
 ```{r}
@@ -168,7 +192,12 @@ total_2020_pkg <- total_2020_pkg %>%
 total_2020_pkg <- total_2020_pkg %>% 
   arrange(-annual_unique) %>% 
   mutate(rank_unique = rep(1:nrow(total_2020_pkg))) %>% 
-  mutate(rank_diff = rank_total - rank_unique)
+  mutate(rank_diff = rank_total - rank_unique) 
+
+total_2020_pkg <- total_2020_pkg %>% 
+  left_join(first_relase, key = "package") %>% 
+  filter(Date >= "2020-01-01")
+
 
 
 ```
@@ -193,6 +222,10 @@ total_2019_pkg <- total_2019_pkg %>%
   mutate(rank_unique = rep(1:nrow(total_2019_pkg))) %>% 
   mutate(rank_diff = rank_total - rank_unique)
 
+
+total_2019_pkg <- total_2019_pkg %>% 
+  left_join(first_relase, key = "package") %>% 
+  filter(Date >= "2019-01-01")
 ```
 
 
@@ -216,6 +249,10 @@ total_2018_pkg <- total_2018_pkg %>%
   mutate(rank_unique = rep(1:nrow(total_2018_pkg))) %>% 
   mutate(rank_diff = rank_total - rank_unique)
 
+total_2018_pkg <- total_2018_pkg %>% 
+left_join(first_relase, key = "package") %>% 
+  filter(Date >= "2018-01-01")
+
 ```
 
 ```{r}
@@ -238,6 +275,9 @@ total_2017_pkg <- total_2017_pkg %>%
   mutate(rank_unique = rep(1:nrow(total_2017_pkg))) %>% 
   mutate(rank_diff = rank_total - rank_unique)
 
+total_2017_pkg <- total_2017_pkg %>% 
+left_join(first_relase, key = "package") %>% 
+  filter(Date >= "2017-01-01")
 ```
 
 ```{r}
@@ -260,6 +300,9 @@ total_2016_pkg <- total_2016_pkg %>%
   mutate(rank_unique = rep(1:nrow(total_2016_pkg))) %>% 
   mutate(rank_diff = rank_total - rank_unique)
 
+total_2016_pkg <- total_2016_pkg %>% 
+left_join(first_relase, key = "package") %>% 
+  filter(Date >= "2016-01-01")
 ```
 
 
@@ -283,6 +326,9 @@ total_2015_pkg <- total_2015_pkg %>%
   mutate(rank_unique = rep(1:nrow(total_2015_pkg))) %>% 
   mutate(rank_diff = rank_total - rank_unique)
 
+total_2015_pkg <- total_2015_pkg %>% 
+left_join(first_relase, key = "package") %>% 
+  filter(Date >= "2015-01-01")
 ```
 
 
@@ -306,6 +352,10 @@ total_2014_pkg <- total_2014_pkg %>%
   mutate(rank_unique = rep(1:nrow(total_2014_pkg))) %>% 
   mutate(rank_diff = rank_total - rank_unique)
 
+total_2014_pkg <- total_2014_pkg %>% 
+left_join(first_relase, key = "package") %>% 
+  filter(Date >= "2014-01-01")
+
 ```
 
 ```{r}
@@ -327,6 +377,10 @@ total_2013_pkg <- total_2013_pkg %>%
   arrange(-annual_unique) %>% 
   mutate(rank_unique = rep(1:nrow(total_2013_pkg))) %>% 
   mutate(rank_diff = rank_total - rank_unique)
+
+total_2013_pkg <- total_2013_pkg %>% 
+left_join(first_relase, key = "package") %>% 
+  filter(Date >= "2013-01-01")
 ```
 
 
@@ -343,17 +397,78 @@ total_year <- bind_rows(
   `2021`= total_2021_pkg,
   .id = "year"
 )
+
+T
 ```
 
 ```{r}
-total_year %>% ggplot(aes(y = precentage)) +
-  geom_boxplot(aes(x = year, color = year))
+total_year %>% ggplot(aes(y = precentage, x = year)) +
+  geom_violin() + 
+  geom_boxplot(width = 0.1) 
 ```
+
+```{r}
+library(plotly)
+
+total_year %>% 
+  filter(rank_unique <= 10) %>% 
+  ggplot(aes(y = precentage, x = year, color = year, text = package)) + 
+  geom_point()
+
+ggplotly()
+```
+```{r}
+pkgs_big_rank_diff <- total_year %>% 
+  filter(rank_diff < 0 ) %>% 
+  filter(rank_total < 50) %>% 
+  group_by(package) %>% 
+  summarise(rank_diff = sum(abs(rank_diff)),
+            n = n()) %>% 
+  filter(n > 3) %>% 
+  arrange(desc(rank_diff)) %>% 
+  slice(1:40) %>% 
+  pull(package) 
+
+total_year %>% 
+  #filter(package %in% c("ggplot2","dplyr","tibble","RColorBrewer","rlang", "colorspace", "tidyr", "lme4", "agricolae")) %>% 
+  filter(package %in% pkgs_big_rank_diff) %>% 
+  ggplot(aes(x=year))+
+  geom_line(aes(y = rank_unique, group = package), color = "red") +
+  geom_line(aes(y = rank_total, group = package), color = "black") + 
+  facet_wrap(~package, scale = "free")
+```
+
+```{r}
+pkgs_big_rank_diff <- total_year %>% 
+  filter(rank_diff < 0 ) %>% 
+  filter(rank_total < 20) %>% 
+  group_by(package) %>% 
+  summarise(rank_diff = sum(abs(rank_diff)),
+            n = n()) %>% 
+  filter(n > 3) %>% 
+  arrange(desc(rank_diff)) %>% 
+  slice(1:40) %>% 
+  pull(package) 
+
+total_year %>% 
+  #filter(package %in% c("ggplot2","dplyr","tibble","RColorBrewer","rlang", "colorspace", "tidyr", "lme4", "agricolae")) %>% 
+  filter(package %in% pkgs_big_rank_diff) %>% 
+  ggplot(aes(x=year))+
+  geom_line(aes(y = rank_unique, group = package), color = "red") +
+  geom_line(aes(y = rank_total, group = package), color = "black") + 
+  facet_wrap(~package, scale = "free")
+```
+
 
 ```{r}
 total_year %>% 
-  filter(rank_total <= 10) %>% 
-  ggplot(aes(y = precentage, x = year, color = package)) + 
+  group_by(year) %>% 
+  top_n(10, rank_total)  %>% 
+  ggplot(aes(y = precentage, x = year, color = year, text = package)) + 
   geom_point()
+
+ggplotly()
 ```
+
+
 

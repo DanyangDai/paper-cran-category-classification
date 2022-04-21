@@ -1,0 +1,198 @@
+---
+title: "EDA_2020"
+author: "Danyang Dai"
+date: "30/03/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(cranlogs)
+library(DBI)
+```
+
+```{r}
+con <- dbConnect(
+  RPostgres::Postgres(),
+  host = "db.mitchelloharawild.com",
+  dbname = "cranlogs",
+  user = "guest",
+  password = "JNoGzAc9V5yxdsU9"
+)
+
+DBI::dbListTables(con)
+#> [1] "cran_logs"
+cran_logs <- tbl(con, "cran_logs")
+```
+
+```{r}
+get_taskview <- function(package){
+  return(ctv:::.get_pkgs_from_ctv_or_repos(package,repos = "http://cran.rstudio.com/")[[1]])
+}
+```
+
+
+```{r}
+exp_des <- get_taskview("ExperimentalDesign")
+ecomtric <- get_taskview("Econometrics")
+ts <- get_taskview("TimeSeries")
+gm <- get_taskview("GraphicalModels")
+teachs <- get_taskview("TeachingStatistics")
+bays <- get_taskview("Bayesian")
+chemPhys <- get_taskview("ChemPhys")
+ClinicalTrials	<- get_taskview("ClinicalTrials")
+Cluster <- get_taskview("Cluster")
+Databases <- get_taskview("Databases")
+diff_equl <- get_taskview("DifferentialEquations")
+Distributions <- get_taskview("Distributions")
+Environmetrics <- get_taskview("Environmetrics")
+ExtremeValue <- get_taskview("ExtremeValue")
+Finance <- get_taskview("Finance")
+FunctionalData <- get_taskview("FunctionalData")
+hpc <- get_taskview("HighPerformanceComputing")
+Hydrology <- get_taskview("Hydrology")
+ML <- get_taskview("MachineLearning")
+MedicalImaging <- get_taskview("MedicalImaging")
+MetaAnalysis <- get_taskview("MetaAnalysis")
+MissingData <- get_taskview("MissingData")
+ModelDeployment <- get_taskview("ModelDeployment")
+NLP <- get_taskview("NaturalLanguageProcessing")
+NumericalMathematics <- get_taskview("NumericalMathematics")
+OfficialStatistics <- get_taskview("OfficialStatistics")
+Optimization <- get_taskview("Optimization")
+Pharmacokinetics <- get_taskview("Pharmacokinetics")
+Psychometrics <- get_taskview("Psychometrics")
+ReproducibleResearch <- get_taskview("ReproducibleResearch")
+Robust <- get_taskview("Robust")
+Spatial <- get_taskview("Spatial")
+SpatioTemporal <- get_taskview("SpatioTemporal")
+Survival <- get_taskview("Survival")
+Tracking <- get_taskview("Tracking")
+WebTechnologies <- get_taskview("WebTechnologies")
+```
+
+```{r}
+total_year <- total_year %>% 
+  mutate(taskview = case_when(
+    package %in% exp_des ~ "ExperimentalDesign",
+    package %in% ecomtric ~ "Econometrics",
+    package %in% ts ~ "TimeSeries",
+    package %in% gm ~ "GraphicalModels",
+    package %in% dist ~ "Distributions",
+    package %in% teachs ~ "TeachingStatistics",
+    package %in% bays ~ "Bayesian",
+    package %in% chemPhys ~ "ChemPhys",
+    package %in% ClinicalTrials ~ "ClinicalTrials",
+    package %in% Cluster ~ "Cluster",
+    package %in% Databases ~ "Databases",
+    package %in% diff_equl ~ "DifferentialEquations",
+    package %in% Environmetrics ~ "Environmetrics",
+    package %in% Finance ~ "Finance",
+    package %in% FunctionalData ~ "FunctionalData",
+    package %in% hpc ~ "hpc",
+    package %in% Hydrology ~ "Hydrology",
+    package %in% ML ~ "ML",
+    package %in% MedicalImaging ~ "MedicalImaging",
+    package %in% OfficialStatistics ~ "OfficialStatistics",
+    package %in% Optimization ~ "Optimization",
+    package %in% Pharmacokinetics ~ "Pharmacokinetics",
+    package %in% Psychometrics ~ "Psychometrics",
+    package %in% ReproducibleResearch ~ "ReproducibleResearch",
+    package %in% Robust ~ "Robust",
+    package %in% Spatial ~ "Spatial",
+    package %in% SpatioTemporal ~ "SpatioTemporal",
+    package %in% Survival ~ "Survival",
+    package %in% Tracking ~ "Tracking",
+    package %in% WebTechnologies ~ "WebTechnologies",
+  ))
+```
+
+```{r}
+ed <- total_year %>% 
+  filter(taskview == "ExperimentalDesign")
+ 
+ed <- ed %>% 
+  group_by(year) %>% 
+  top_n(10,annual_total) 
+
+ed %>% 
+  ggplot(aes(y = precentage, x = year, color = year, text = package)) + 
+  geom_point()
+
+ggplotly()
+
+```
+
+```{r}
+
+ecom <- total_year %>% 
+  filter(taskview == "Econometrics")
+ 
+ecom <- ecom %>% 
+  group_by(year) %>% 
+  top_n(10,annual_total) 
+
+ecom %>% 
+  ggplot(aes(y = precentage, x = year, color = year, text = package)) + 
+  geom_point()
+
+ggplotly()
+
+```
+
+```{r}
+total_year %>% 
+  filter(year == "2021") %>% 
+  filter(!is.na(taskview)) %>% 
+  ggplot(aes(y = precentage)) +
+  geom_violin(aes(x = taskview)) +
+  geom_boxplot(aes(x = taskview)) 
+```
+
+
+
+```{r}
+ts_2021 <- download_2021 %>% 
+  filter(taskview == "TimeSeries") %>% 
+  group_by(package) %>% 
+  summarise(total = sum(download), unique = sum(unique)) %>% 
+  arrange(-total)
+
+ts_2021 <- ts_2021 %>% 
+  mutate(rank_total = rep(1:nrow(ts_2021)))
+
+ts_2021 <- ts_2021 %>% 
+  arrange(-unique) %>% 
+  mutate(rank_unique = rep(1:nrow(ts_2021))) %>% 
+  mutate(precentage = (unique/total)*100) %>% 
+  mutate(rank_diff = rank_total - rank_unique)
+```
+
+```{r}
+gm_2021 <- download_2021 %>% 
+  filter(taskview == "GraphicalModels") %>% 
+  group_by(package) %>% 
+  summarise(total = sum(download), unique = sum(unique)) %>% 
+  arrange(-total)
+
+gm_2021 <- gm_2021 %>% 
+  mutate(rank_total = rep(1:nrow(gm_2021)))
+
+gm_2021 <- gm_2021 %>% 
+  arrange(-unique) %>% 
+  mutate(rank_unique = rep(1:nrow(gm_2021))) %>% 
+  mutate(precentage = (unique/total)*100) %>% 
+  mutate(rank_diff = rank_total - rank_unique)
+```
+
+```{r}
+
+```
+
+
+

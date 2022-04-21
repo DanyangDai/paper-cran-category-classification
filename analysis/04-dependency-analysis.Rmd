@@ -11,19 +11,210 @@ knitr::opts_chunk$set(echo = TRUE)
 #install_github("cbail/textnets")
 library(textnets)
 library(ggraph)
+library(pkgsearch)
+library(fable)
+library(feasts)
+library(vars)
+```
+
+```{r}
+url <- "http://cran.rstudio.com/web/packages/packages.rds"
+db <- readRDS(url(url)) %>% 
+  as.data.frame()%>% 
+  mutate(Description = str_replace_all(Description, "\n", " "),
+         Description = str_squish(Description),
+         Title = str_replace_all(Title, "\n", " "))
+```
+
+```{r}
+con <- dbConnect(
+  RPostgres::Postgres(),
+  host = "db.mitchelloharawild.com",
+  dbname = "cranlogs",
+  user = "guest",
+  password = "JNoGzAc9V5yxdsU9"
+)
+
+DBI::dbListTables(con)
+#> [1] "cran_logs"
+cran_logs <- tbl(con, "cran_logs")
 ```
 
 
 ```{r}
 # dependency analysis
 depends <- sapply(strsplit(as.character(db$Depends), " \\("), "[", 1)
+imports <- sapply(strsplit(as.character(db$Imports), " \\("), "[", 1)
+cols_im <-  c("imp", "pkg")
 cols <- c("dep", "pkg")
 depends <- depends %>%
   as.data.frame() %>%
   mutate(pkg = db$Package)
+imports <- imports %>%
+  as.data.frame() %>%
+  mutate(pkg = db$Package)
 
 colnames(depends) <- cols
+colnames(imports) <- cols_im
+
 ```
+
+```{r}
+pkg_wt_dep <- depends %>% 
+  filter(dep != "R")
+
+pkg_dep_dyp <- depends %>% 
+  filter(dep %in% "dplyr")
+
+name_dp <- c(pkg_dep_dyp$pkg)
+```
+
+```{r}
+dep_dplyr <- cran_logs %>% 
+  filter(package %in% name_dp) %>% 
+  collect()
+
+dplyr_db <-  cran_logs %>% 
+  filter(package == "dplyr") %>% 
+  collect()
+
+updates_dep <-map_dfr(name_dp, cran_package_history)
+
+updates_dep <- updates_dep %>% 
+  select(Package,Version,Date)
+
+updates_dplyr <- cran_package_history("dplyr")
+
+updates_dplyr <- updates_dplyr %>% 
+  select(Package,Version,date)
+```
+
+
+```{r}
+dplyr_db <- dplyr_db %>% 
+  group_by(file_date) %>% 
+  summarise(n_unique = sum(n_unique),n_total = sum(n_total))
+
+dplyr_db %>% 
+  as_tsibble(index = file_date) %>% 
+  model(STL(n_unique, robust = TRUE)) %>%
+  components(season_adjust) %>% 
+  autoplot()
+
+adj_dplyr <- dplyr_db %>% 
+  as_tsibble(index = file_date) %>% 
+  model(STL(n_unique,robust = TRUE)) %>%
+  components() %>% 
+  dplyr::select(season_adjust)
+
+adj_dplyr %>% 
+  autoplot() +
+   geom_vline(
+    xintercept = as.numeric(as.Date(updates_dplyr$date)), linetype = "dotted",
+    color = "red", size = 0.1
+  )
+
+```
+
+
+
+```{r}
+dep_dplyr <- split(dep_dplyr,dep_dplyr$package)
+andromeda <- dep_dplyr[1]
+bread <- dep_dplyr[2]
+censusr <- dep_dplyr[3]
+chunked <- dep_dplyr[4]
+dplyr.teradata <- dep_dplyr[5]
+ggraptR <- dep_dplyr[6]
+shinySIR <- dep_dplyr[7]
+tangram.pipe <- dep_dplyr[8]
+ushr <- dep_dplyr[9]
+```
+
+
+```{r}
+andromeda <- as_tibble(andromeda) 
+andromeda <- andromeda$Andromeda
+andromeda <- andromeda %>% 
+  group_by(file_date) %>% 
+  summarise(n_unique = sum(n_unique),n_total = sum(n_total))
+
+andromeda %>% 
+  as_tsibble(index = file_date) %>% 
+  model(STL(n_unique, robust = TRUE)) %>%
+  components(season_adjust) %>% 
+  autoplot()
+
+adj_andromeda <- andromeda %>% 
+  as_tsibble(index = file_date) %>% 
+  model(STL(n_unique, robust = TRUE)) %>%
+  components() %>% 
+  dplyr::select(season_adjust)
+
+
+adj_andromeda %>% 
+  autoplot()
+```
+
+```{r}
+bread <- as_tibble(bread) 
+bread <- bread$bread
+bread <- bread %>% 
+  group_by(file_date) %>% 
+  summarise(n_unique = sum(n_unique),n_total = sum(n_total))
+
+bread %>% 
+  as_tsibble(index = file_date) %>% 
+  model(STL(n_unique)) %>%
+  components(season_adjust) %>% 
+  autoplot()
+
+adj_bread <- bread %>% 
+  as_tsibble(index = file_date) %>% 
+  model(STL(n_unique)) %>%
+  components() %>% 
+  dplyr::select(season_adjust)
+
+
+adj_bread %>% 
+  autoplot()
+```
+
+
+
+```{r}
+censusr <- as_tibble(censusr) 
+censusr <- censusr$censusr
+censusr <- censusr %>% 
+  group_by(file_date) %>% 
+  summarise(n_unique = sum(n_unique),n_total = sum(n_total))
+
+censusr %>% 
+  as_tsibble(index = file_date) %>% 
+  tsibble::fill_gaps() %>% 
+  model(STL(n_unique)) %>%
+  autoplot()
+
+adj_censusr <- censusr %>% 
+  as_tsibble(index = file_date) %>% 
+  model(STL(n_unique)) %>%
+  components() %>% 
+  dplyr::select(season_adjust)
+
+
+adj_censusr %>% 
+  autoplot()
+```
+
+
+
+
+
+
+
+
+
+
 
 ```{r}
 dep_group <- depends %>%
