@@ -61,18 +61,34 @@ daily_download %>%
 
 
 ```{r}
-url = 'https://cran.r-project.org/web/packages/available_packages_by_date.html'
+load(here::here("data/derived/updates.Rdata"))
+load(here::here("data/derived/updates_2.Rdata"))
+load(here::here("data/derived/updates_3.Rdata"))
+load(here::here("data/derived/updates_4.Rdata"))
+load(here::here("data/derived/updates_5.Rdata"))
+load(here::here("data/derived/updates_6.Rdata"))
+load(here::here("data/derived/updates_7.Rdata"))
+load(here::here("data/derived/updates_8.Rdata"))
+load(here::here("data/derived/updates_9.Rdata"))
 
-CRANpage <- read_html(url)
-tbls <- html_nodes(CRANpage, "table") # since HTML is in table; no need to scrape td/tr elements
-table1 <- html_table(tbls[1], fill = TRUE)
-dd <- data.frame(table1[1])
-dd$Date <- as.Date(dd$Date)
-first_relase <- dd %>% 
+updates_list <- list(updates, updates_2, updates_3, updates_4, updates_5, updates_6, updates_7, updates_8, updates_9)
+
+select_pkg_ver_date <- function(x) {
+  x %>%
+    dplyr::select(Package, Version, date)
+}
+
+
+updates_select <- map_dfr(updates_list, select_pkg_ver_date)
+
+
+first_relase <- updates_select %>% 
+  group_by(Package) %>% 
+  summarise(first = min(date)) %>% 
   rename(package = Package)
 
-rm(list = Filter(exists, c("packageNames")))
-packageNames <- dd$Package
+first_relase <- first_relase %>% 
+  mutate(first = lubridate::as_date(first))
 ```
 
 
@@ -85,12 +101,15 @@ download_2021 <- cran_logs %>%
   summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
   collect()
 
-
-total_2021_pkg <-download_2021 %>% 
+total_2021_pkg <- download_2021 %>% 
   group_by(package) %>% 
   summarise(annual_total = sum(download), annual_unique =   sum(unique)) %>% 
   mutate(annual_total = as.integer(annual_total),
          annual_unique = as.integer(annual_unique))
+
+total_2021_pkg <- total_2021_pkg %>% 
+  left_join(first_relase, key = "package")
+
 
 total_2021_pkg <- total_2021_pkg %>% 
   mutate(diff = annual_total - annual_unique) %>% 
@@ -109,9 +128,6 @@ total_2021_pkg <- total_2021_pkg %>%
   mutate(rank_unique = rep(1:nrow(total_2021_pkg))) %>% 
   mutate(rank_diff = rank_total - rank_unique) 
 
-total_2021_pkg <- total_2021_pkg %>% 
-  left_join(first_relase, key = "package") %>% 
-  filter(Date <= "2021-01-01")
 ```
 
 ```{r}
