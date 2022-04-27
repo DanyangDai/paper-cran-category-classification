@@ -108,7 +108,8 @@ total_2021_pkg <- download_2021 %>%
          annual_unique = as.integer(annual_unique))
 
 total_2021_pkg <- total_2021_pkg %>% 
-  left_join(first_relase, key = "package")
+  left_join(first_relase, key = "package") %>% 
+  filter(first <= "2021-01-01") 
 
 
 total_2021_pkg <- total_2021_pkg %>% 

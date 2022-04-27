@@ -9,12 +9,14 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 #library(devtools)
 #install_github("cbail/textnets")
-library(textnets)
+#library(textnets)
 library(ggraph)
 library(pkgsearch)
 library(fable)
 library(feasts)
 library(vars)
+library(tidyverse)
+library(MASS)
 ```
 
 ```{r}
@@ -206,11 +208,223 @@ adj_censusr %>%
   autoplot()
 ```
 
+```{r}
+ggplot <- cran_logs %>% 
+  filter(package == "ggplot2") %>% 
+  collect()
 
 
+gganimate <-  cran_logs %>% 
+  filter(package == "gganimate") %>% 
+  collect()
 
 
+ggcorrplot <-  cran_logs %>% 
+  filter(package == "ggcorrplot") %>% 
+  collect()
 
+```
+
+
+```{r}
+
+gganimate <-  gganimate %>% 
+  group_by(file_date) %>% 
+  summarise(n_unique = sum(n_unique),n_total = sum(n_total)) 
+
+gganimate <- gganimate %>% 
+  group_by(file_date) %>% 
+  summarise(n_unique = sum(n_unique),n_total = sum(n_total)) %>% 
+  as_tsibble(index = file_date)
+
+ggcorrplot <- ggcorrplot %>% 
+  group_by(file_date) %>% 
+  summarise(n_unique = sum(n_unique),n_total = sum(n_total)) %>% 
+  as_tsibble(index = file_date)
+
+
+ggplot <- ggplot %>% 
+  group_by(file_date) %>% 
+  summarise(n_unique = sum(n_unique),n_total = sum(n_total)) %>% 
+  filter(file_date >= "2019-01-03") %>% 
+  as_tsibble(index = file_date)
+
+
+gganimate %>% 
+  model(STL(n_unique,robust = TRUE)) %>%
+  components(season_adjust) %>% 
+  autoplot()
+
+ggplot %>% 
+  model(STL(n_unique,robust = TRUE)) %>%
+  components(season_adjust) %>% 
+  autoplot()
+
+ggcorrplot %>% 
+  model(STL(n_unique,robust = TRUE)) %>%
+  components(season_adjust) %>% 
+  autoplot()
+
+adj_gganimate <- gganimate %>% 
+  model(STL(n_unique,robust = TRUE)) %>%
+  components() %>% 
+  dplyr::select(season_adjust)
+
+
+adj_ggplot <- ggplot %>% 
+  model(STL(n_unique,robust = TRUE)) %>%
+  components() %>% 
+  dplyr::select(season_adjust)
+
+
+ad_gg <- adj_gganimate %>% 
+  mutate(ggplot = adj_ggplot$season_adjust)
+
+
+adf_1<- adj_gganimate %>%
+  as_tsibble() %>% 
+  features(season_adjust, features = list(adf = ~ tseries::adf.test(.)$p.value))
+
+
+adf_2 <- adj_ggplot %>%
+  as_tsibble() %>% 
+  features(season_adjust, features = list(adf = ~ tseries::adf.test(.)$p.value))
+
+ad_gg <- adj_gganimate %>% 
+  mutate(ggplot = adj_ggplot$season_adjust) %>% 
+  rename(gganimate = season_adjust) %>% 
+  as.data.frame() %>% 
+  select(-file_date)
+
+ad_gg_scale <- ad_gg %>% 
+  mutate(ggplot = scale(ggplot),
+         gganimate = scale(gganimate))
+
+var_gg <- VAR(ad_gg, p = 2,type = "none")
+
+fevd_gg <-fevd(var_gg, n.ahead = 7)
+
+fevd <- array(NA,dim = c(2,2,7))
+
+for (i in 1:7) {
+  fevd[,,i] <- rbind(fevd_gg$gganimate[i,],fevd_gg$ggplot[i,])
+}
+
+spillover_gg <- c(rep(NA,7))
+
+for(i in 1:7) {
+  spillover_gg[i] <- 1-sum(diag(fevd[,,i]))/sum(fevd[,,i])
+}
+
+
+tibble(
+  date = seq_along(spillover_gg),
+  spillover = round(spillover_gg*100,2)) %>% 
+  ggplot(aes(x = date, y = spillover)) + 
+  geom_point() +
+  theme_bw() 
+```
+
+
+```{r}
+
+dep_pkg <-  cran_logs %>% 
+  filter(package %in% !! pkg_wt_dep$pkg) %>% 
+  group_by(package) %>% 
+  summarise(n_unique = sum(n_unique),n_total = sum(n_total)) %>% 
+  collect()
+```
+
+```{r}
+lubridate <- cran_logs %>% 
+  filter(package == "lubridate") %>% 
+  collect()
+
+
+lubridate <- lubridate %>% 
+  group_by(file_date) %>% 
+  summarise(n_unique = sum(n_unique),n_total = sum(n_total)) %>% 
+  as_tsibble(index = file_date)
+
+methods <- cran_logs %>% 
+  filter(package == "methods") %>% 
+  collect()
+
+
+methods <- methods %>% 
+  group_by(file_date) %>% 
+  summarise(n_unique = sum(n_unique),n_total = sum(n_total)) %>% 
+  as_tsibble(index = file_date) 
+
+
+lubridate %>% 
+  filter(file_date >= "2013-01-01") %>% 
+  model(STL(n_unique,robust = TRUE)) %>%
+  components(season_adjust) %>% 
+  autoplot()
+
+methods %>% 
+  filter(file_date >= "2013-01-01") %>% 
+  model(STL(n_unique,robust = TRUE)) %>%
+  components(season_adjust) %>% 
+  autoplot()
+
+
+adj_gganimate <- gganimate %>% 
+  model(STL(n_unique,robust = TRUE)) %>%
+  components() %>% 
+  dplyr::select(season_adjust)
+
+
+adj_ggplot <- ggplot %>% 
+  model(STL(n_unique,robust = TRUE)) %>%
+  components() %>% 
+  dplyr::select(season_adjust)
+
+
+ad_gg <- adj_gganimate %>% 
+  mutate(ggplot = adj_ggplot$season_adjust)
+
+
+adf_1<- adj_gganimate %>%
+  as_tsibble() %>% 
+  features(season_adjust, features = list(adf = ~ tseries::adf.test(.)$p.value))
+
+
+adf_2 <- adj_ggplot %>%
+  as_tsibble() %>% 
+  features(season_adjust, features = list(adf = ~ tseries::adf.test(.)$p.value))
+
+ad_gg <- adj_gganimate %>% 
+  mutate(ggplot = adj_ggplot$season_adjust) %>% 
+  rename(gganimate = season_adjust) %>% 
+  as.data.frame() %>% 
+  select(-file_date)
+
+var_gg <- VAR(ad_gg, p = 2,type = "none")
+
+fevd_gg <-fevd(var_gg, n.ahead = 7)
+
+fevd <- array(NA,dim = c(2,2,7))
+
+for (i in 1:7) {
+  fevd[,,i] <- rbind(fevd_gg$gganimate[i,],fevd_gg$ggplot[i,])
+}
+
+spillover_gg <- c(rep(NA,7))
+
+for(i in 1:7) {
+  spillover_gg[i] <- 1-sum(diag(fevd[,,i]))/sum(fevd[,,i])
+}
+
+
+tibble(
+  date = seq_along(spillover_gg),
+  spillover = round(spillover_gg*100,2)) %>% 
+  ggplot(aes(x = date, y = spillover)) + 
+  geom_point() +
+  theme_bw() 
+```
 
 
 
