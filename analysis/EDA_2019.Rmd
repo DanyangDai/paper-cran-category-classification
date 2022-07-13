@@ -1,0 +1,68 @@
+---
+title: "EDA_2019"
+author: "Danyang Dai"
+date: "30/03/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(cranlogs)
+library(DBI)
+```
+
+```{r}
+con <- dbConnect(
+  RPostgres::Postgres(),
+  host = "db.mitchelloharawild.com",
+  dbname = "cranlogs",
+  user = "guest",
+  password = "JNoGzAc9V5yxdsU9"
+)
+
+DBI::dbListTables(con)
+#> [1] "cran_logs"
+cran_logs <- tbl(con, "cran_logs")
+```
+
+```{r}
+download_2019 <- cran_logs %>% 
+  filter(file_date >= "2019-01-01" & file_date <= "2019-12-31") %>%
+  group_by(file_date,package) %>% 
+  summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
+  collect()
+```
+
+```{r}
+total_2019_pkg <-download_2019 %>% 
+  group_by(package) %>% 
+  summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
+  mutate(annual_total = as.integer(annual_total),
+         annual_unique = as.integer(annual_unique))
+
+total_2019_pkg <- total_2019_pkg %>% 
+  mutate(diff = annual_total - annual_unique) %>% 
+  mutate(precentage = (annual_unique/annual_total)*100)
+
+total_2019_pkg <- total_2019_pkg %>% 
+  arrange(-annual_total) %>% 
+  mutate(rank_total = rep(1:nrow(total_2019_pkg)))
+
+total_2019_pkg <- total_2019_pkg %>% 
+  arrange(-annual_unique) %>% 
+  mutate(rank_unique = rep(1:nrow(total_2019_pkg))) %>% 
+  mutate(rank_diff = rank_total - rank_unique)
+```
+
+```{r}
+total_2019_pkg %>% 
+  ggplot(aes(x=precentage))+
+  geom_histogram()
+```
+

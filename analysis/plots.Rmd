@@ -1,0 +1,161 @@
+---
+title: "analysis_plots"
+author: "Danyang Dai"
+date: "07/06/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(cranlogs)
+```
+
+```{r}
+readRDS("../data/analysis/total_2021_pkg.rds")
+readRDS("../data/analysis/total_2020_pkg.rds")
+readRDS("../data/analysis/total_2019_pkg.rds")
+readRDS("../data/analysis/total_2018_pkg.rds")
+readRDS("../data/analysis/total_2017_pkg.rds")
+readRDS("../data/analysis/total_2016_pkg.rds")
+readRDS("../data/analysis/total_2015_pkg.rds")
+readRDS("../data/analysis/total_2014_pkg.rds")
+readRDS("../data/analysis/total_2013_pkg.rds")
+readRDS("../data/analysis/total_year.rds")
+
+```
+
+```{r}
+total_2021_pkg <- total_2021_pkg %>% 
+  arrange(-annual_total) %>% 
+  mutate(rank_total = rep(1:nrow(total_2021_pkg)))
+
+
+total_2021_pkg <- total_2021_pkg %>% 
+  mutate(years = format(first, format = "%Y")) 
+
+total_2021_pkg <- total_2021_pkg %>% 
+  mutate(years = 2022- as.integer(years))
+```
+
+```{r}
+total_2021_pkg %>% 
+  top_n(10, annual_total) %>% 
+  ggplot(aes(x = annual_total)) + 
+  geom_point(aes(y = precentage, color = package,size = years))
+```
+
+```{r}
+total_year <- total_year %>% 
+  arrange(-annual_total) %>% 
+  mutate(rank_total = rep(1:nrow(total_year)))
+
+total_year <- total_year %>% 
+  mutate(years = format(first, format = "%Y")) 
+
+total_year <- total_year %>% 
+  mutate(years = 2022- as.integer(years))
+```
+
+```{r}
+total_year %>% 
+  ggplot(aes(x = years)) + 
+  geom_point(aes(y = diff))
+```
+
+```{r}
+total_year %>% 
+  ggplot(aes(x = years, y = precentage, group = years)) + 
+  geom_violin() + 
+  geom_boxplot(width = 0.1) 
+```
+
+
+```{r}
+total_year %>% 
+  filter(rank_total >= 50 ) %>% 
+  ggplot(aes(x = years)) + 
+  geom_point(aes(y = rank_diff))
+```
+
+```{r}
+total_year %>% 
+  filter(rank_unique <= 10) %>% 
+  ggplot(aes(y = precentage, x = year, color = year, text = package)) + 
+  geom_point()
+```
+
+```{r}
+total_year %>% 
+  ggplot(aes(y = precentage, x = year)) +
+  geom_violin() + 
+  geom_boxplot(width = 0.1) 
+```
+
+```{r}
+pkgs_big_rank_diff <- total_year %>% 
+  filter(rank_diff > 0 ) %>% 
+  filter(rank_total < 50) %>% 
+  group_by(package) %>% 
+  summarise(rank_diff = sum(abs(rank_diff)),
+            n = n()) %>% 
+  filter(n > 3) %>% 
+  arrange(desc(rank_diff)) %>% 
+  slice(1:40) %>% 
+  pull(package) 
+
+total_year %>% 
+  filter(package %in% pkgs_big_rank_diff) %>% 
+  ggplot(aes(x=year))+
+  geom_line(aes(y = rank_unique, group = package), color = "red") +
+  geom_line(aes(y = rank_total, group = package), color = "black") + 
+  facet_wrap(~package, scale = "free") + 
+  scale_y_reverse()
+```
+
+```{r}
+pkgs_big_rank_diff_neg <- total_year %>% 
+  filter(rank_diff > 0 ) %>% 
+  filter(rank_total < 50) %>% 
+  group_by(package) %>% 
+  summarise(rank_diff = sum(abs(rank_diff)),
+            n = n()) %>% 
+  filter(n > 3) %>% 
+  arrange(desc(rank_diff)) %>% 
+  slice(1:40) %>% 
+  pull(package) 
+
+total_year %>% 
+  filter(package %in% pkgs_big_rank_diff_neg) %>% 
+  ggplot(aes(x=year))+
+  geom_line(aes(y = rank_unique, group = package), color = "red") +
+  geom_line(aes(y = rank_total, group = package), color = "black") + 
+  facet_wrap(~package, scale = "free") + 
+  scale_y_reverse()
+```
+
+```{r}
+# top packages
+total_year %>% 
+  filter(rank_total >= 50) %>% 
+  ggplot(aes(x = year, y = rank_diff, group = year)) + 
+  geom_violin() + 
+  geom_boxplot(width = 0.1) 
+```
+
+```{r}
+# bottom 50 packages 
+total_year %>% 
+  group_by(year) %>%
+  arrange(rank_total) %>%
+  slice(1:50) %>%
+  ungroup() %>% 
+  ggplot(aes(x = year, y = rank_diff, group = year)) + 
+  geom_violin() + 
+  geom_boxplot(width = 0.1) 
+```
+

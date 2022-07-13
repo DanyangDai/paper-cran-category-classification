@@ -1,7 +1,10 @@
 .Rproj.user
 .Rhistory
-.RData
+.RData*
 .Ruserdata
 cache/
 .DS_Store
 data/derived
+data/analysis/download_*
+data/analysis/total_*
+!data/analysis/total_year.rds

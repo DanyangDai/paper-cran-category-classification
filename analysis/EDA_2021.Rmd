@@ -101,6 +101,8 @@ download_2021 <- cran_logs %>%
   summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
   collect()
 
+#saveRDS(download_2021,file = "../data/analysis/download_2021.rds")
+                                                                                  
 total_2021_pkg <- download_2021 %>% 
   group_by(package) %>% 
   summarise(annual_total = sum(download), annual_unique =   sum(unique)) %>% 
@@ -111,10 +113,10 @@ total_2021_pkg <- total_2021_pkg %>%
   left_join(first_relase, key = "package") %>% 
   filter(first <= "2021-01-01") 
 
-
 total_2021_pkg <- total_2021_pkg %>% 
   mutate(diff = annual_total - annual_unique) %>% 
   mutate(precentage = (annual_unique/annual_total)*100)
+
 ```
 
 
@@ -128,6 +130,8 @@ total_2021_pkg <- total_2021_pkg %>%
   arrange(-annual_unique) %>% 
   mutate(rank_unique = rep(1:nrow(total_2021_pkg))) %>% 
   mutate(rank_diff = rank_total - rank_unique) 
+
+saveRDS(total_2021_pkg,file = "../data/analysis/total_2021_pkg.rds")
 
 ```
 
@@ -145,11 +149,15 @@ download_2020 <- cran_logs %>%
   summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
   collect()
 
+saveRDS(download_2020,file = "../data/analysis/download_2020.rds")
+
 download_2019 <- cran_logs %>% 
   filter(file_date >= "2019-01-01" & file_date <= "2019-12-31") %>%
   group_by(file_date,package) %>% 
   summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
   collect()
+
+saveRDS(download_2019,file = "../data/analysis/download_2019.rds")
 
 download_2018 <- cran_logs %>% 
   filter(file_date >= "2018-01-01" & file_date <= "2018-12-31") %>%
@@ -157,6 +165,7 @@ download_2018 <- cran_logs %>%
   summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
   collect()
 
+saveRDS(download_2018,file = "../data/analysis/download_2018.rds")
 
 download_2017 <- cran_logs %>% 
   filter(file_date >= "2017-01-01" & file_date <= "2017-12-31") %>%
@@ -164,11 +173,17 @@ download_2017 <- cran_logs %>%
   summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
   collect()
 
+saveRDS(download_2017,file = "../data/analysis/download_2017.rds")
+
+
 download_2016 <- cran_logs %>% 
   filter(file_date >= "2016-01-01" & file_date <= "2016-12-31") %>%
   group_by(file_date,package) %>% 
   summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
   collect()
+
+saveRDS(download_2016,file = "../data/analysis/download_2016.rds")
+
 
 download_2015 <- cran_logs %>% 
   filter(file_date >= "2015-01-01" & file_date <= "2015-12-31") %>%
@@ -176,11 +191,15 @@ download_2015 <- cran_logs %>%
   summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
   collect()
 
+saveRDS(download_2015,file = "../data/analysis/download_2015.rds")
+
 download_2014 <- cran_logs %>% 
   filter(file_date >= "2014-01-01" & file_date <= "2014-12-31") %>%
   group_by(file_date,package) %>% 
   summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
   collect()
+
+saveRDS(download_2014,file = "../data/analysis/download_2014.rds")
 
 download_2013 <- cran_logs %>% 
   filter(file_date >= "2013-01-01" & file_date <= "2013-12-31") %>%
@@ -188,11 +207,17 @@ download_2013 <- cran_logs %>%
   summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
   collect()
 
+saveRDS(download_2013,file = "../data/analysis/download_2013.rds")
+
+
 ```
 
 
 ```{r}
-total_2020_pkg <-download_2020 %>% 
+
+download_2020 <- readRDS("../data/analysis/download_2020.rds")
+
+total_2020_pkg <- download_2020 %>% 
   group_by(package) %>% 
   summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
   mutate(annual_total = as.integer(annual_total),
@@ -213,13 +238,16 @@ total_2020_pkg <- total_2020_pkg %>%
 
 total_2020_pkg <- total_2020_pkg %>% 
   left_join(first_relase, key = "package") %>% 
-  filter(Date >= "2020-01-01")
+  filter(first <= "2020-01-01")
 
+saveRDS(total_2020_pkg,file = "../data/analysis/total_2020_pkg.rds")
 
 
 ```
 
 ```{r}
+download_2019 <- readRDS("../data/analysis/download_2019.rds")
+
 total_2019_pkg <-download_2019 %>% 
   group_by(package) %>% 
   summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
@@ -242,12 +270,17 @@ total_2019_pkg <- total_2019_pkg %>%
 
 total_2019_pkg <- total_2019_pkg %>% 
   left_join(first_relase, key = "package") %>% 
-  filter(Date >= "2019-01-01")
+  filter(first <= "2019-01-01")
+
+saveRDS(total_2019_pkg,file = "../data/analysis/total_2019_pkg.rds")
+
 ```
 
 
 ```{r}
-total_2018_pkg <-download_2018 %>% 
+download_2018 <- readRDS("../data/analysis/download_2018.rds")
+
+total_2018_pkg <- download_2018 %>% 
   group_by(package) %>% 
   summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
   mutate(annual_total = as.integer(annual_total),
@@ -268,11 +301,17 @@ total_2018_pkg <- total_2018_pkg %>%
 
 total_2018_pkg <- total_2018_pkg %>% 
 left_join(first_relase, key = "package") %>% 
-  filter(Date >= "2018-01-01")
+  filter(first <= "2018-01-01")
 
+saveRDS(total_2018_pkg,file = "../data/analysis/total_2018_pkg.rds")
 ```
 
+
+
 ```{r}
+
+download_2017 <- readRDS("../data/analysis/download_2017.rds")
+
 total_2017_pkg <-download_2017 %>% 
   group_by(package) %>% 
   summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
@@ -293,11 +332,16 @@ total_2017_pkg <- total_2017_pkg %>%
   mutate(rank_diff = rank_total - rank_unique)
 
 total_2017_pkg <- total_2017_pkg %>% 
-left_join(first_relase, key = "package") %>% 
-  filter(Date >= "2017-01-01")
+  left_join(first_relase, key = "package") %>% 
+  filter(first <= "2017-01-01")
+
+saveRDS(total_2017_pkg,file = "../data/analysis/total_2017_pkg.rds")
+
 ```
 
 ```{r}
+download_2016 <- readRDS("../data/analysis/download_2016.rds")
+
 total_2016_pkg <-download_2016 %>% 
   group_by(package) %>% 
   summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
@@ -319,11 +363,15 @@ total_2016_pkg <- total_2016_pkg %>%
 
 total_2016_pkg <- total_2016_pkg %>% 
 left_join(first_relase, key = "package") %>% 
-  filter(Date >= "2016-01-01")
+  filter(first <= "2016-01-01")
+
+saveRDS(total_2016_pkg,file = "../data/analysis/total_2016_pkg.rds")
 ```
 
 
 ```{r}
+download_2015 <- readRDS("../data/analysis/download_2015.rds")
+
 total_2015_pkg <-download_2015 %>% 
   group_by(package) %>% 
   summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
@@ -345,11 +393,16 @@ total_2015_pkg <- total_2015_pkg %>%
 
 total_2015_pkg <- total_2015_pkg %>% 
 left_join(first_relase, key = "package") %>% 
-  filter(Date >= "2015-01-01")
+  filter(first <= "2015-01-01")
+
+saveRDS(total_2015_pkg,file = "../data/analysis/total_2015_pkg.rds")
+
 ```
 
 
 ```{r}
+download_2014 <- readRDS("../data/analysis/download_2014.rds")
+
 total_2014_pkg <-download_2014 %>% 
   group_by(package) %>% 
   summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
@@ -371,11 +424,15 @@ total_2014_pkg <- total_2014_pkg %>%
 
 total_2014_pkg <- total_2014_pkg %>% 
 left_join(first_relase, key = "package") %>% 
-  filter(Date >= "2014-01-01")
+  filter(first <= "2014-01-01")
+
+saveRDS(total_2014_pkg,file = "../data/analysis/total_2014_pkg.rds")
 
 ```
 
 ```{r}
+download_2013 <- readRDS("../data/analysis/download_2013.rds")
+
 total_2013_pkg <-download_2013 %>% 
   group_by(package) %>% 
   summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
@@ -397,11 +454,25 @@ total_2013_pkg <- total_2013_pkg %>%
 
 total_2013_pkg <- total_2013_pkg %>% 
 left_join(first_relase, key = "package") %>% 
-  filter(Date >= "2013-01-01")
+  filter(first <= "2013-01-01")
+
+saveRDS(total_2013_pkg,file = "../data/analysis/total_2013_pkg.rds")
+
 ```
 
 
 ```{r}
+total_2013_pkg <- readRDS("../data/analysis/total_2013_pkg.rds")
+total_2014_pkg <- readRDS("../data/analysis/total_2014_pkg.rds")
+total_2015_pkg <- readRDS("../data/analysis/total_2015_pkg.rds")
+total_2016_pkg <- readRDS("../data/analysis/total_2016_pkg.rds")
+total_2017_pkg <- readRDS("../data/analysis/total_2017_pkg.rds")
+total_2018_pkg <- readRDS("../data/analysis/total_2018_pkg.rds")
+total_2019_pkg <- readRDS("../data/analysis/total_2019_pkg.rds")
+total_2020_pkg <- readRDS("../data/analysis/total_2020_pkg.rds")
+total_2021_pkg <- readRDS("../data/analysis/total_2021_pkg.rds")
+
+
 total_year <- bind_rows(
   `2013`= total_2013_pkg,
   `2014`= total_2014_pkg,
@@ -415,7 +486,7 @@ total_year <- bind_rows(
   .id = "year"
 )
 
-T
+saveRDS(total_year,file = "../data/analysis/total_year.rds")
 ```
 
 ```{r}
@@ -434,6 +505,8 @@ total_year %>%
 
 ggplotly()
 ```
+
+
 ```{r}
 pkgs_big_rank_diff <- total_year %>% 
   filter(rank_diff < 0 ) %>% 
