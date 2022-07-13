@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(lubridate)
 library(cranlogs)
+library(broom)
 ```
 
 ```{r}
@@ -26,8 +27,8 @@ total_2015_pkg <- readRDS("../data/analysis/total_2015_pkg.rds")
 total_2014_pkg <- readRDS("../data/analysis/total_2014_pkg.rds")
 total_2013_pkg <- readRDS("../data/analysis/total_2013_pkg.rds")
 total_year <- readRDS("../data/analysis/total_year.rds")
-
 ```
+
 
 ```{r}
 total_2021_pkg <- total_2021_pkg %>% 
@@ -61,6 +62,8 @@ total_2020_pkg %>%
   ggplot(aes(x = log(annual_total))) + 
   geom_point(aes(y = precentage, color = years))
 ```
+
+
 ```{r}
 total_2015_pkg <- total_2015_pkg %>% 
   mutate(years = format(first, format = "%Y")) 
@@ -73,6 +76,8 @@ total_2015_pkg %>%
   ggplot(aes(x = log(annual_total))) + 
   geom_point(aes(y = precentage, color = years))
 ```
+
+
 ```{r}
 total_year <- total_year %>% 
   mutate(years = format(first, format = "%Y")) 
@@ -83,8 +88,154 @@ total_year %>%
   geom_point(aes(y = annual_unique))+ 
   geom_abline(slope = 1, intercept = 0, color = "red") +
   facet_wrap(~year, scale = "free") 
+
 ```
 
+
+```{r}
+linear_model <- total_year %>% 
+  group_by(year) %>% 
+  nest()
+
+linear_model <- linear_model %>% 
+  mutate(model = lapply(data, function(x) lm(x$annual_total ~ x$annual_unique)))
+
+linear_model <- linear_model %>% 
+  mutate(coeff = lapply(model, function(x) tidy(x))) %>% 
+  mutate(redis = lapply(model, function(x) augment(x)))
+
+redis_plot <- linear_model %>% 
+  unnest(redis)
+
+redis_plot %>% 
+   ggplot(aes(x = .fitted,
+           y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, colour = "red") + 
+  facet_wrap(~year)
+```
+
+```{r}
+redis_plot %>% 
+   ggplot(aes(x = .fitted,
+           y = .resid, color= year)) +
+  geom_point(alpha = 0.3) +
+  geom_hline(yintercept = 0, colour = "red") 
+```
+
+
+```{r}
+large_redis <- redis_plot %>% 
+  filter(.resid >= 10000 | .resid <= -10000) 
+
+large_redis %>% 
+  mutate(value = ifelse(.resid >0, "Positive", "Negative")) %>% 
+  ggplot(aes(x = year, fill = value)) +
+  geom_bar(stat = "count") 
+  
+```
+
+```{r}
+large_redis_pkg <- large_redis %>% 
+  unnest(data)
+```
+
+```{r}
+coeff_plots <- linear_model %>% 
+  unnest(coeff) %>% 
+  select(year, term, estimate)
+
+coeff_plots <- coeff_plots %>% 
+   pivot_wider(id_cols = year, names_from =  term, values_from = estimate) %>%
+   rename(intercept = `(Intercept)`,
+          coeff = `x$annual_unique`)
+
+coeff_plots %>% 
+  ggplot(aes(x = year, 
+                y = intercept, 
+                colour = coeff, 
+                label = year)) +
+  geom_point() 
+```
+
+
+```{r}
+coeff_plots %>% 
+  ggplot(aes(x = year, 
+                y = coeff, 
+                colour = intercept, 
+                label = year)) +
+  geom_point(size = 2)+
+  geom_line(group = 1)
+```
+
+```{r}
+
+linear_model <- linear_model %>% 
+  mutate(model_wo = lapply(data, function(x) lm(x$annual_total ~ x$annual_unique + 0)))
+
+linear_model <- linear_model %>% 
+  mutate(coeff_wo = lapply(model_wo, function(x) tidy(x))) %>% 
+  mutate(redis_wo = lapply(model_wo, function(x) augment(x)))
+
+redis_plot_wo <- linear_model %>% 
+  unnest(redis_wo)
+
+redis_plot_wo %>% 
+   ggplot(aes(x = .fitted,
+           y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, colour = "red") + 
+  facet_wrap(~year)
+```
+
+```{r}
+coeff_plots_wo <- linear_model %>% 
+  unnest(coeff_wo) %>% 
+  select(year, term, estimate)
+
+coeff_plots_wo <- coeff_plots_wo %>% 
+   pivot_wider(id_cols = year, names_from =  term, values_from = estimate) %>%
+   rename(coeff = `x$annual_unique`)
+
+coeff_plots_wo %>% 
+  ggplot(aes(x = year, 
+                y = coeff, 
+                label = year)) +
+  geom_point(size = 2)+
+  geom_line(group = 1)
+```
+```{r}
+large_redis_wo <- redis_plot_wo %>% 
+  filter(.resid >= 10000 | .resid <= -10000) 
+
+large_redis_wo %>% 
+  mutate(value = ifelse(.resid >0, "Positive", "Negative")) %>% 
+  ggplot(aes(x = year, fill = value)) +
+  geom_bar(stat = "count") 
+```
+
+```{r}
+redis_plot_wo <- redis_plot_wo %>% 
+  rename(annual_total = `x$annual_total`) %>% 
+  left_join(total_year)
+
+ggplot(data = total_year, 
+       aes(x = annual_unique, y = annual_total)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method="lm",formula = y ~ 0 + x, se = FALSE) +
+  # overlay fitted values
+  geom_point(data = redis_plot_wo, 
+             aes(y = .fitted), 
+             color = "blue", 
+             alpha = 0.2) +
+  # draw a line segment from the fitted value to observed value
+  geom_segment(data = redis_plot_wo, 
+               aes(y = .fitted, xend = annual_unique, yend = annual_total),
+               color = "blue",
+               alpha = 0.2) + 
+  facet_wrap(~year)
+```
 
 ```{r}
 total_year <- total_year %>% 
