@@ -32,15 +32,16 @@ list(
   
   
   # package updates and releases
-  tar_target(pkg_names, pull(cranscrub::pkg_db(), Package)),
-  tar_target(pkg_releases1, get_pkg_releases(pkg_names[1:3000])),
-  tar_target(pkg_releases2, get_pkg_releases(pkg_names[3001:6000])),
-  tar_target(pkg_releases3, get_pkg_releases(pkg_names[6001:9000])),
-  tar_target(pkg_releases4, get_pkg_releases(pkg_names[9001:12000])),
-  tar_target(pkg_releases5, get_pkg_releases(pkg_names[12001:15000])),
-  tar_target(pkg_releases6, get_pkg_releases(pkg_names[15001:length(pkg_names)])),
-  tar_target(pkg_releases, bind_rows(pkg_releases1, pkg_releases2, pkg_releases3,
-                                     pkg_releases4, pkg_releases5, pkg_releases6)),
+  # tar_target(pkg_names, pull(cranscrub::pkg_db(), Package)),
+  # tar_target(pkg_releases1, get_pkg_releases(pkg_names[1:3000])),
+  # tar_target(pkg_releases2, get_pkg_releases(pkg_names[3001:6000])),
+  # tar_target(pkg_releases3, get_pkg_releases(pkg_names[6001:9000])),
+  # tar_target(pkg_releases4, get_pkg_releases(pkg_names[9001:12000])),
+  # tar_target(pkg_releases5, get_pkg_releases(pkg_names[12001:15000])),
+  # tar_target(pkg_releases6, get_pkg_releases(pkg_names[15001:length(pkg_names)])),
+  # tar_target(pkg_releases, bind_rows(pkg_releases1, pkg_releases2, pkg_releases3,
+  #                                    pkg_releases4, pkg_releases5, pkg_releases6)),
+  tar_target(pkg_releases, readRDS("data/target/pkg_releases.rds")), 
   
   # getting total annual data 
   tar_target(total_dfs, annual_download(2013:2021)),
