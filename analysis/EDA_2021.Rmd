@@ -40,18 +40,20 @@ cran_logs <- tbl(con, "cran_logs")
 ```{r}
 # duplicated downloads over time 
 
-daily_download <- cran_logs %>% 
+daily_download_collect <- cran_logs %>% 
   group_by(file_date) %>% 
-  summarise(download = sum(n_total),unique = sum(n_unique)) %>% 
+  summarise(download = sum(n_total),
+            unique = sum(n_unique)) %>% 
   collect()
 
-
-daily_download <- daily_download %>% 
+daily_download <- daily_download_collect %>% 
   mutate(difference = download - unique) %>% 
   mutate(download = as.integer(download)) %>% 
   mutate(unique = as.integer(unique))
+```
 
 
+```{r daily-download-check}
 daily_download %>% 
   ggplot(aes(x = file_date)) +
   geom_line(aes(y = download), color = "red") + 
@@ -372,7 +374,7 @@ saveRDS(total_2016_pkg,file = "../data/analysis/total_2016_pkg.rds")
 ```{r}
 download_2015 <- readRDS("../data/analysis/download_2015.rds")
 
-total_2015_pkg <-download_2015 %>% 
+total_2015_pkg <- download_2015 %>% 
   group_by(package) %>% 
   summarise(annual_total = sum(download), annual_unique = sum(unique)) %>% 
   mutate(annual_total = as.integer(annual_total),

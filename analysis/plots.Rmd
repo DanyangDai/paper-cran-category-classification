@@ -17,31 +17,19 @@ library(broom)
 ```
 
 ```{r}
-total_2021_pkg <-readRDS("../data/analysis/total_2021_pkg.rds")
-total_2020_pkg <- readRDS("../data/analysis/total_2020_pkg.rds")
-total_2019_pkg <- readRDS("../data/analysis/total_2019_pkg.rds")
-total_2018_pkg <- readRDS("../data/analysis/total_2018_pkg.rds")
-total_2017_pkg <- readRDS("../data/analysis/total_2017_pkg.rds")
-total_2016_pkg <- readRDS("../data/analysis/total_2016_pkg.rds")
-total_2015_pkg <- readRDS("../data/analysis/total_2015_pkg.rds")
-total_2014_pkg <- readRDS("../data/analysis/total_2014_pkg.rds")
-total_2013_pkg <- readRDS("../data/analysis/total_2013_pkg.rds")
-total_year <- readRDS("../data/analysis/total_year.rds")
+years <- 2013:2021
+totals_df <- map_dfr(years,
+                   ~{
+                     readRDS(glue::glue("../data/analysis/total_{.x}_pkg.rds")) %>% 
+                               arrange(desc(annual_total)) %>% 
+                               mutate(rank_total = 1:n(),
+                                      age = year(Sys.Date()) - year(first),
+                                      year = .x) 
+                    })
 ```
 
 
-```{r}
-total_2021_pkg <- total_2021_pkg %>% 
-  arrange(-annual_total) %>% 
-  mutate(rank_total = rep(1:nrow(total_2021_pkg)))
 
-
-total_2021_pkg <- total_2021_pkg %>% 
-  mutate(years = format(first, format = "%Y")) 
-
-total_2021_pkg <- total_2021_pkg %>% 
-  mutate(years = 2022- as.integer(years))
-```
 
 ```{r}
 total_2021_pkg %>% 
@@ -82,37 +70,37 @@ total_2015_pkg %>%
 total_year <- total_year %>% 
   mutate(years = format(first, format = "%Y")) 
 
+
 total_year %>% 
-  ggplot(aes(x = annual_total)) + 
+  ggplot(aes(x = annual_unique, y = annual_total)) + 
   #geom_point(aes(y = precentage)) +
-  geom_point(aes(y = annual_unique))+ 
-  geom_abline(slope = 1, intercept = 0, color = "red") +
+  geom_point() + 
+  #geom_abline(slope = 1, intercept = 0, color = "red") +
+  geom_smooth(method = MASS::rlm) +
   facet_wrap(~year, scale = "free") 
 
 ```
 
 
 ```{r}
-linear_model <- total_year %>% 
+linear_model <- total_dfs %>% 
   group_by(year) %>% 
-  nest()
-
-linear_model <- linear_model %>% 
-  mutate(model = lapply(data, function(x) lm(x$annual_total ~ x$annual_unique)))
-
-linear_model <- linear_model %>% 
-  mutate(coeff = lapply(model, function(x) tidy(x))) %>% 
-  mutate(redis = lapply(model, function(x) augment(x)))
+  nest() %>% 
+  mutate(model = map(data, ~MASS::rlm(annual_total ~ annual_unique, data = .x)),
+         coeff = map(model, ~tidy(.x)),
+         resid = map(model, ~augment(.x)),
+         package = map(data, ~select(.x, package)))
 
 redis_plot <- linear_model %>% 
-  unnest(redis)
+  select(year, resid) %>% 
+  unnest(resid)
 
 redis_plot %>% 
    ggplot(aes(x = .fitted,
            y = .resid)) +
   geom_point() +
   geom_hline(yintercept = 0, colour = "red") + 
-  facet_wrap(~year)
+  facet_wrap(~year, scales = "free")
 ```
 
 ```{r}
