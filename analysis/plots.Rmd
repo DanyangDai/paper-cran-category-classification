@@ -16,16 +16,16 @@ library(cranlogs)
 ```
 
 ```{r}
-readRDS("../data/analysis/total_2021_pkg.rds")
-readRDS("../data/analysis/total_2020_pkg.rds")
-readRDS("../data/analysis/total_2019_pkg.rds")
-readRDS("../data/analysis/total_2018_pkg.rds")
-readRDS("../data/analysis/total_2017_pkg.rds")
-readRDS("../data/analysis/total_2016_pkg.rds")
-readRDS("../data/analysis/total_2015_pkg.rds")
-readRDS("../data/analysis/total_2014_pkg.rds")
-readRDS("../data/analysis/total_2013_pkg.rds")
-readRDS("../data/analysis/total_year.rds")
+total_2021_pkg <-readRDS("../data/analysis/total_2021_pkg.rds")
+total_2020_pkg <- readRDS("../data/analysis/total_2020_pkg.rds")
+total_2019_pkg <- readRDS("../data/analysis/total_2019_pkg.rds")
+total_2018_pkg <- readRDS("../data/analysis/total_2018_pkg.rds")
+total_2017_pkg <- readRDS("../data/analysis/total_2017_pkg.rds")
+total_2016_pkg <- readRDS("../data/analysis/total_2016_pkg.rds")
+total_2015_pkg <- readRDS("../data/analysis/total_2015_pkg.rds")
+total_2014_pkg <- readRDS("../data/analysis/total_2014_pkg.rds")
+total_2013_pkg <- readRDS("../data/analysis/total_2013_pkg.rds")
+total_year <- readRDS("../data/analysis/total_year.rds")
 
 ```
 
@@ -44,10 +44,47 @@ total_2021_pkg <- total_2021_pkg %>%
 
 ```{r}
 total_2021_pkg %>% 
-  top_n(10, annual_total) %>% 
-  ggplot(aes(x = annual_total)) + 
-  geom_point(aes(y = precentage, color = package,size = years))
+ # top_n(100, annual_total) %>% 
+  ggplot(aes(x = log(annual_total))) + 
+  geom_point(aes(y = precentage, color = years))
 ```
+
+```{r}
+total_2020_pkg <- total_2020_pkg %>% 
+  mutate(years = format(first, format = "%Y")) 
+
+total_2020_pkg <- total_2020_pkg %>% 
+  mutate(years = 2021- as.integer(years))
+
+total_2020_pkg %>% 
+ # top_n(100, annual_total) %>% 
+  ggplot(aes(x = log(annual_total))) + 
+  geom_point(aes(y = precentage, color = years))
+```
+```{r}
+total_2015_pkg <- total_2015_pkg %>% 
+  mutate(years = format(first, format = "%Y")) 
+
+total_2015_pkg <- total_2015_pkg %>% 
+  mutate(years = 2016- as.integer(years))
+
+total_2015_pkg %>% 
+ # top_n(100, annual_total) %>% 
+  ggplot(aes(x = log(annual_total))) + 
+  geom_point(aes(y = precentage, color = years))
+```
+```{r}
+total_year <- total_year %>% 
+  mutate(years = format(first, format = "%Y")) 
+
+total_year %>% 
+  ggplot(aes(x = annual_total)) + 
+  #geom_point(aes(y = precentage)) +
+  geom_point(aes(y = annual_unique))+ 
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  facet_wrap(~year, scale = "free") 
+```
+
 
 ```{r}
 total_year <- total_year %>% 
@@ -64,23 +101,38 @@ total_year <- total_year %>%
 ```{r}
 total_year %>% 
   ggplot(aes(x = years)) + 
-  geom_point(aes(y = diff))
+  geom_point(aes(y = diff)) +
+  geom_tile("annual total - annual unique and no. years of release")
 ```
 
 ```{r}
 total_year %>% 
-  ggplot(aes(x = years, y = precentage, group = years)) + 
+  ggplot(aes(x = years, y = precentage, group  = years)) + 
   geom_violin() + 
-  geom_boxplot(width = 0.1) 
+  geom_boxplot(width = 0.1) + 
+  scale_x_reverse()+
+  facet_wrap(~year) + 
+  xlab("Age of the packages") + 
+  ylab("total unique / total total")
 ```
 
 
 ```{r}
 total_year %>% 
-  filter(rank_total >= 50 ) %>% 
-  ggplot(aes(x = years)) + 
-  geom_point(aes(y = rank_diff))
+  filter(rank_unique <= 50 ) %>% 
+  ggplot(aes(x = year)) + 
+  geom_boxplot(aes(y = rank_diff))# + 
+  #ylim(-500,100)
 ```
+```{r}
+total_year %>% 
+  filter(rank_unique <= 50 ) %>% 
+  ggplot(aes(x = year)) + 
+  geom_boxplot(aes(y = abs(rank_diff))) + 
+  ylab("absulate value of (rank total - rank unique) ") +
+  xlab("Year")
+```
+
 
 ```{r}
 total_year %>% 
@@ -119,7 +171,7 @@ total_year %>%
 
 ```{r}
 pkgs_big_rank_diff_neg <- total_year %>% 
-  filter(rank_diff > 0 ) %>% 
+  filter(rank_diff < 0 ) %>% 
   filter(rank_total < 50) %>% 
   group_by(package) %>% 
   summarise(rank_diff = sum(abs(rank_diff)),
@@ -141,7 +193,7 @@ total_year %>%
 ```{r}
 # top packages
 total_year %>% 
-  filter(rank_total >= 50) %>% 
+  filter(rank_total <= 50) %>% 
   ggplot(aes(x = year, y = rank_diff, group = year)) + 
   geom_violin() + 
   geom_boxplot(width = 0.1) 
@@ -157,5 +209,125 @@ total_year %>%
   ggplot(aes(x = year, y = rank_diff, group = year)) + 
   geom_violin() + 
   geom_boxplot(width = 0.1) 
+```
+
+```{r}
+no_updates <- updates_select %>% 
+  group_by(Package) %>% 
+  count() %>% 
+  mutate(package = as.character(Package), 
+         no_updates = as.integer(n)) %>% 
+  select(package, no_updates)
+
+total_year <- total_year %>% 
+  left_join(no_updates)
+```
+
+```{r}
+total_year %>% 
+  #filter(rank_total <= 50) %>% 
+  ggplot(aes(x = no_updates, color = annual_total)) + 
+  geom_point(aes(y = precentage))# + 
+ # facet_wrap(~year)
+```
+```{r}
+total_year %>% 
+  ggplot(aes(x = no_updates)) + 
+  geom_point(aes(y = precentage, colour = log(annual_total))) +
+  facet_wrap(~year)
+```
+
+```{r}
+total_year %>% 
+  ggplot(aes(x = no_updates)) + 
+  geom_point(aes(y = log(annual_total)))
+```
+
+```{r}
+total_year %>% 
+  ggplot(aes(x = no_updates)) + 
+  geom_point(aes(y = rank_diff), alpha = 0.05) 
+```
+
+
+```{r}
+library(cranlogs)
+cran_downloads("nestr",from = "2022-05-31", to = "2022-06-06")
+
+```
+
+```{r}
+# start <- as.Date('2022-05-31')
+# end <- as.Date('2022-06-06')
+# all_days <- seq(start, end, by = 'day')
+# year <- as.POSIXlt(all_days)$year + 1900
+# urls <- paste0('http://cran-logs.rstudio.com/', year, '/', all_days, '.csv.gz')
+# nestr_1 <- read_csv(urls[1])
+# nestr_2 <- read_csv(urls[2])
+# nestr_3 <- read_csv(urls[3])
+# nestr_4 <- read_csv(urls[4])
+# nestr_5 <- read_csv(urls[5])
+# nestr_6 <- read_csv(urls[6])
+# nestr_7 <- read_csv(urls[7])
+
+```
+
+```{r}
+# saveRDS(nestr_1,file = "../data/analysis/cranlog_2022-05-31.rds")
+# saveRDS(nestr_2,file = "../data/analysis/cranlog_2022-06-01.rds")
+# saveRDS(nestr_3,file = "../data/analysis/cranlog_2022-06-02.rds")
+# saveRDS(nestr_4,file = "../data/analysis/cranlog_2022-06-03.rds")
+# saveRDS(nestr_5,file = "../data/analysis/cranlog_2022-06-04.rds")
+# saveRDS(nestr_6,file = "../data/analysis/cranlog_2022-06-05.rds")
+# saveRDS(nestr_7,file = "../data/analysis/cranlog_2022-06-06.rds")
+
+nestr_1 <- readRDS(file = "../data/analysis/cranlog_2022-05-31.rds")
+nestr_2 <- readRDS(file = "../data/analysis/cranlog_2022-06-01.rds")
+nestr_3 <- readRDS(file = "../data/analysis/cranlog_2022-06-02.rds")
+nestr_4 <- readRDS(file = "../data/analysis/cranlog_2022-06-03.rds")
+nestr_5 <- readRDS(file = "../data/analysis/cranlog_2022-06-04.rds")
+nestr_6 <- readRDS(file = "../data/analysis/cranlog_2022-06-05.rds")
+nestr_7 <- readRDS(file = "../data/analysis/cranlog_2022-06-06.rds")
+
+
+```
+
+```{r}
+nestr_1 <- nestr_1 %>% 
+  filter(package == "nestr")
+
+nestr_2 <- nestr_2 %>% 
+  filter(package == "nestr")
+
+nestr_3 <- nestr_3 %>% 
+  filter(package == "nestr")
+
+nestr_4 <- nestr_4 %>% 
+  filter(package == "nestr")
+
+nestr_5 <- nestr_5 %>% 
+  filter(package == "nestr")
+
+nestr_6 <- nestr_6 %>% 
+  filter(package == "nestr")
+
+nestr_7 <- nestr_7 %>% 
+  filter(package == "nestr")
+```
+
+```{r}
+unique_count <- function(cranlog_files){
+  cranlog_files %>% 
+  count(date, r_version, r_arch, r_os, package, version, country, ip_id) %>% 
+      group_by(date, package) %>% 
+      summarise(n_unique = n(), n_total = sum(n), .groups = "drop")
+  }
+```
+
+```{r}
+unique_count(nestr_1)
+unique_count(nestr_2)
+unique_count(nestr_6)
+
 ```
 

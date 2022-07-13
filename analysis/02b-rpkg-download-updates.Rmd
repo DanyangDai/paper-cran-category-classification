@@ -198,6 +198,8 @@ updates_select <- map_dfr(updates_list, select_pkg_ver_date)
 updates_select <- updates_select %>%
   mutate(Date = as.Date(updates_select$date))
 
+saveRDS(updates_select, "../data/analysis/updates.RDS")
+
 first_realse <- updates_select %>% 
   group_by(Package) %>%
   filter(date == min(date)) %>% 
