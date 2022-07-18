@@ -64,6 +64,18 @@ annual_download <- function(years){
                        })
 }
 
+
+get_cran_pkg <- function(){
+  url <- "http://cran.rstudio.com/web/packages/packages.rds"
+  db <- readRDS(url(url)) %>% 
+    as.data.frame()%>% 
+    mutate(Description = str_replace_all(Description, "\n", " "),
+           Description = str_squish(Description),
+           Title = str_replace_all(Title, "\n", " "))  
+}
+
+
+
 rlm_total_vs_unique_coeff <- function(total_dfs){
   linear_model <- total_dfs %>% 
     group_by(year) %>% 
@@ -75,19 +87,27 @@ rlm_total_vs_unique_coeff <- function(total_dfs){
   return(linear_model)
 }
 
-linear_models_residuals <- function(total_dfs){
+
+rlm_year_residuals <- function(total_dfs, which_year){
   linear_model <- total_dfs %>% 
-    group_by(year) %>% 
-    nest() %>% 
-    mutate(model = map(data, ~MASS::rlm(annual_total ~ annual_unique, data = .x)),
-           auginfo = map2(model, data, ~ {
-             augment(.x) %>% 
-                mutate(package = data$package) 
-             })) %>%     
-    select(-model) %>% 
-    unnest(auginfo) 
+    filter(year == which_year) %>% 
+    mutate(auginfo = augment( MASS::rlm(annual_total ~ annual_unique))) %>% 
   return(linear_model)
 }
+
+# rlinear_models_residuals <- function(total_dfs){
+#   linear_model <- total_dfs %>% 
+#     group_by(year) %>% 
+#     nest() %>% 
+#     mutate(model = map(data, ~MASS::rlm(annual_total ~ annual_unique, data = .x)),
+#            auginfo = map2(model, data, ~ {
+#              augment(.x) %>% 
+#                 mutate(package = data$package) 
+#              })) %>%     
+#     select(-model) %>% 
+#     unnest(auginfo) 
+#   return(linear_model)
+# }
 
 
 unnest_lm <- function(variables, models){
@@ -99,7 +119,7 @@ unnest_lm <- function(variables, models){
 
 large_resid <- function(redis_data, positive, negative){
   redis_data %>% 
-    filter(.resid >= positive | .resid <= negative) 
+    filter(auginfo$.resid >= !!positive | auginfo$.resid <= !!negative) 
 }
 
 large_rank_diff <- function(total_dfs,benchmark_rank, top_rank){

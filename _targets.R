@@ -52,38 +52,48 @@ list(
   
   # Robust linear regression analysis of total vs unique counts
   
-  tar_target(lm_models, rlm_total_vs_unique_coeff(total_dfs)),
-  tar_target(lm_models_res, linear_models_residuals(total_dfs)),
-  tar_target(lm_residuals_data, unnest_lm(variables = c("year","resid"), lm_models)),
-  tar_target(lm_coeffs_data, unnest_lm(variables = c("year","coeff"), lm_models)),
-  tar_target(lm_coeffs_data_long, lm_coeffs_data %>% 
+  tar_target(rlm_models, rlm_total_vs_unique_coeff(total_dfs)),
+  tar_target(rlm_models_res_2013, rlm_year_residuals(total_dfs,2013)),
+  tar_target(rlm_models_res_2014, rlm_year_residuals(total_dfs,2014)),
+  tar_target(rlm_models_res_2015, rlm_year_residuals(total_dfs,2015)),
+  tar_target(rlm_models_res_2016, rlm_year_residuals(total_dfs,2016)),
+  tar_target(rlm_models_res_2017, rlm_year_residuals(total_dfs,2017)),
+  tar_target(rlm_models_res_2018, rlm_year_residuals(total_dfs,2018)),
+  tar_target(rlm_models_res_2019, rlm_year_residuals(total_dfs,2019)),
+  tar_target(rlm_models_res_2020, rlm_year_residuals(total_dfs,2020)),
+  tar_target(rlm_models_res_2021, rlm_year_residuals(total_dfs,2021)),
+  tar_target(rlm_models_res, rbind(rlm_models_res_2013,rlm_models_res_2014,rlm_models_res_2015,
+                                   rlm_models_res_2016,rlm_models_res_2017,rlm_models_res_2018,
+                                   rlm_models_res_2019,rlm_models_res_2020,rlm_models_res_2021)),
+  tar_target(rlm_coeffs_data, rlm_models %>% select(-data)),
+  tar_target(rlm_coeffs_data_long, rlm_coeffs_data %>% 
                select(year, term, estimate) %>% 
                pivot_wider(id_cols = year, names_from =  term, values_from = estimate) %>%
                rename(intercept = `(Intercept)`,
                       coeff = `annual_unique`)),
-  tar_target(lm_large_resid, large_resid(lm_residuals_data,10000,-1000)),
+  tar_target(lm_large_resid, large_resid(rlm_models_res,10000,-1000)),
   
   # LM plots 
   
-  tar_target(resid_plot_fitted_resid, resid_plots(lm_residuals_data, .fitted,.resid,year)),
-  tar_target(intercept_plot_year, lm_coeffs_data_long %>% 
+  tar_target(resid_plot_fitted_resid, resid_plots(rlm_models_res,'auginfo$.fitted','auginfo$.resid',year)),
+  tar_target(intercept_plot_year, rlm_coeffs_data_long %>% 
                ggplot(aes(x = year, 
                           y = intercept, 
                           colour = coeff, 
                           label = year)) +
                geom_point()),
-  tar_target(coeff_plot_year, lm_coeffs_data_long %>% 
+  tar_target(coeff_plot_year, rlm_coeffs_data_long %>% 
                ggplot(aes(x = year, 
                           y = coeff, 
                           colour = intercept, 
                           label = year)) +
                geom_point() +
                geom_line(group = 1)),
-  tar_target(lm_large_resid_plot, lm_large_resid %>% 
-               mutate(value = ifelse(.resid >0, "Positive", "Negative")) %>% 
-               ggplot(aes(x = year, fill = value)) +
-               geom_bar(stat = "count")),
-  tar_target(lm_distance_plot,plot_lm_distance(total_dfs,lm_residuals_data)),
+  # tar_target(lm_large_resid_plot, lm_large_resid %>% 
+  #              mutate(value = ifelse(.resid >0, "Positive", "Negative")) %>% 
+  #              ggplot(aes(x = year, fill = value)) +
+  #              geom_bar(stat = "count")),
+  #tar_target(lm_distance_plot,plot_lm_distance(total_dfs,lm_residuals_data)),
   
   # large rank diff 
   

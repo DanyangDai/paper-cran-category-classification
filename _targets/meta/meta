@@ -1,21 +1,33 @@
 name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
+annual_download|function|4f61f548d109915f|||||||||||||||
 annual_download_raw|function|395b2678e07ac3ae|||||||||||||||
-coeff_plot_year|stem|e520463b4959ba77|4466d6100c0d4984|a2a3bdac6c39dd5a|244764569||t19180.4878361462s|feaef5102c2a53f9|39574|rds|local|vector|||0.009||
+coeff_plot_year|stem|0e77740801b05a00|489bedc2e5742b04|641851d8162e8c00|244764569||t19191.501951906s|03a6c894dd41dc4b|39575|rds|local|vector|||0.013||
+collect_data|function|b8fb8d04ef5d4908|||||||||||||||
 daily_download|stem|189c7cd4a45684db|ad9845d839eddae8|01ce99e2cdfa697b|-206637260||t19165.1645884414s|b4646357dd314104|20872|rds|local|vector|||0.018||
 daily_download_collect|stem|edd52b578e7845e1|89f1e9ab3b189100|9a9cf8483929233e|-723399587||t19165.1602156639s|f956be6dfd8a8860|35343|rds|local|vector|||8.932|1m22mMissing values are always removed in SQL aggregation functions.Use na.rm  TRUE to silence this warning90mThis warning is displayed once every 8 hours.39m|
-intercept_plot_year|stem|c49bc26a9c5ded98|950c6c5317896471|37e39120804ed30f|1610261152||t19180.4878365174s|2d8c143a836452c8|35991|rds|local|vector|||0.004||
+daily_download_data|function|226ce3b4f0006240|||||||||||||||
+db_connection|function|749c77682566e257|||||||||||||||
+get_cran_pkg|function|78e0466103694595|||||||||||||||
+get_pkg_releases|function|9627e1d6ed28f85c|||||||||||||||
+intercept_plot_year|stem|3a6a6aa01a76cbfb|a30279606acbf5c7|043a8b4837f0e0e5|1610261152||t19191.5019525489s|6af4c47d1ab33529|35993|rds|local|vector|||0.005||
+large_rank_diff|function|9ed2c465b21c872a|||||||||||||||
 large_rank_diff_data|stem|4e1289117587ea4d|3df7f1aaa3a767c1|d9ddccac8156c5af|-975478392||t19180.5214991151s|bed69d39d5d1de67|240|rds|local|vector|||0.06||
 large_rank_diff_top_pkgs|stem|7ac13db5b2813f21|52f1b80fc0627280|fdccf214cdf8c8c0|268773634||t19180.5237856766s|a234fca7d3eaf0e3|2374492|rds|local|vector|||0.05||
+large_resid|function|f31adfe88b51deaf|||||||||||||||
+linear_models|function|98044d599f9180f0|||||||||||||||
+linear_models_residuals|function|e7cff992efbaa8bd|||||||||||||||
+linear_models_year_residuals|function|c5f8c5ba4301d2d5|||||||||||||||
 lm_coeffs_data|stem|45021ec81de9eb6f|a0b771e448872d41|8c6839d1ae8ea6dc|1251818485||t19180.4695653656s|22b991cf0ec7a226|869|rds|local|vector|||0.031|cols is now required when using unnest.Please use cols  ccoeff|
 lm_coeffs_data_long|stem|d11f679c41e95ad4|b4abe4a647262194|ba5aa97aeabbb050|-1303920410||t19180.4749345849s|98594e1ece5d97aa|469|rds|local|vector|||0.031||
-lm_distance_plot|stem|e23eb1149d4f4b0a|646ea3ca2f6c88ac|35a3a9d460678e3a|420501886||t19180.5080509404s|12ef11b99d3366f7|24624320|rds|local|vector|||0.019||
-lm_large_resid|stem|afb691755dda1e6b|2403ad0317bead0e|56c24f32f0b652eb|-1633059506||t19180.4878332958s|a6918cf522fc7707|421755|rds|local|vector|||0.03||
+lm_distance_plot|stem|e23eb1149d4f4b0a|646ea3ca2f6c88ac|d40aff8e24871fad|420501886||t19180.5080509404s||24624320|rds|local|vector|||0.017||object lm_residuals_data not found
+lm_large_resid|stem|d30c68c6ad4e130d|bac61328abad9483|e7ff25cd11f58643|-1633059506||t19191.5168429248s|9c757fecb63c5658|3762355|rds|local|vector|||0.043||
 lm_large_resid_plot|stem|5ac7af2d4a523611|3aa53e251dc70d63|92610fa734856c86|-236887643||t19180.4878356544s|7a403bdb99d0a5aa|1315785|rds|local|vector|||0.016||
-lm_models|stem|51b4361b0c039d77|1ee514032760689f|0c11a01f4f54f92c|-522206366||t19181.027628564s|b22da1eab87fa037|41263497|rds|local|vector|||0.75|rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps|
+lm_models|stem|d3d22c8a5129693f|2cc8b4f8dbf87a8c|5339d1a32541f199|-522206366||t19191.4876844069s|10190d9aa52bab89|4814776|rds|local|vector|||1.088|rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps|
+lm_models_res_2013|stem|e9ef094d756db1ae|07b5c7ef00f23515|f92da3ada2036895|2100381352||t19191.4876565619s|cae1949747c50554|3196872|rds|local|vector|||0.108|rlm failed to converge in 20 steps|
 lm_models_unnest|stem||3b31f511cbb0d66f|033ee130f122f615|479895700||t19181.0276354862s||0|rds|local|vector|||0.036||In row 1, cant recycle input of size 3153 to size 2.
-lm_residuals_data|stem|d28208ca292689f4|7ce1a192a6a2289a|25004e611fc8995f|-26519489||t19181.0276349604s|3c0d91dc39b63962|2219560|rds|local|vector|||0.049|cols is now required when using unnest.Please use cols  cresid|
+lm_residuals_data|stem|d28208ca292689f4|7ce1a192a6a2289a|54dba3c803ff2917|-26519489||t19181.0276349604s||2219560|rds|local|vector|||0.056||Cant subset columns that dont exist.31m39m Column resid doesnt exist.
 pkg_names|stem|b39d30ca99947088|581c27b8107a8127|d9c6b120f5f0ce96|2028442784||t19165.1798139633s|88a7900ac15de7e2|100535|rds|local|vector|||2.853||
-pkg_releases|stem|6b554b85b8035925|1ab94b52bcb6bee7|488cd72667f51293|564524643||t19179.5640578656s|ab39a3683143cf83|206611|rds|local|vector|||0.001||
+pkg_releases|stem|6b554b85b8035925|61d778dba0c9d0af|45dc084e90f18bb4|564524643||t19191.4834217099s|ab39a3683143cf83|206611|rds|local|vector|||1.512||
 pkg_releases1|stem|503bd911b8d011eb|51c1ba49df83163b|04e6e930582c8c43|-1104622147||t19179.5021147522s|13b1230bd61c37c9|36291|rds|local|vector|||1022.062||
 pkg_releases2|stem|11528cf7433b90ca|738d196cbe13919d|04e6e930582c8c43|-1485332389||t19179.5141801364s|3a13b36958cdba65|36058|rds|local|vector|||1042.435||
 pkg_releases3|stem|06bc5b4c9b0e8362|2bcbabfa8dd13b0b|04e6e930582c8c43|701900066||t19179.5261890931s|7edc70113ad42e51|36186|rds|local|vector|||1037.558||
@@ -24,36 +36,27 @@ pkg_releases5|stem|9caccfc24102a206|4f6ba8e6e264d369|04e6e930582c8c43|276165206|
 pkg_releases6|stem|c1608d18dc729eaf|fd147b2b1144e7b1|d0f872823efbb7c8|46094057||t19179.5640570881s|e74db7f3b1ab62ee|39620|rds|local|vector|||1181.59||
 pkg_updates|function|ece71d313ea64f59|||||||||||||||
 plot_daily_download|stem|9315592eaa9f9c7b|c78316e46294bf8e|9e4c9c46f32bdd5d|1626524613||t19165.1645892621s|161d2257825c9fea|103109|rds|local|vector|||0.013||
-resid_plot_fitted_resid|stem|45aa136cab60138c|411928bc237d621e|e2eba28fb74230ef|207622847||t19180.4695794014s|b78f355f3e0942d7|8938132|rds|local|vector|||0.021||
-total_dfs|stem|5758c558cde46918|059c45e9356aa837|551194079ffac432|-738633380||t19179.5943567575s|cfb91d5ff9efe925|2277123|rds|local|vector|||1.319||
-db_connection|function|749c77682566e257|||||||||||||||
-large_resid|function|6535d3231f4d51bd|||||||||||||||
-collect_data|function|b8fb8d04ef5d4908|||||||||||||||
-daily_download_data|function|226ce3b4f0006240|||||||||||||||
-unnest_lm|function|0ea001e0c6e35fec|||||||||||||||
 plot_date_vs_counts|function|0553bb0ce8e38b96|||||||||||||||
-plot_lm_distance|function|522169f355dd5a4c|||||||||||||||
-linear_models_residuals|function|e7cff992efbaa8bd|||||||||||||||
 plot_large_rank_diff|function|bd5adbcd38d3ed75|||||||||||||||
-annual_download|function|4f61f548d109915f|||||||||||||||
-linear_models|function|98044d599f9180f0|||||||||||||||
-get_pkg_releases|function|9627e1d6ed28f85c|||||||||||||||
-saving_data|function|a3ae7c48e084dffc|||||||||||||||
-large_rank_diff|function|9ed2c465b21c872a|||||||||||||||
+plot_lm_distance|function|522169f355dd5a4c|||||||||||||||
+resid_plot_fitted_resid|stem|0b3b8aed9d33eb54|86df1175a55a9d44|25fa6a1dac3b7122|207622847||t19191.5168989135s|56a0b303e4ba3582|20369945|rds|local|vector|||0.018||
 resid_plots|function|7c6fa7d3e0b2ab37|||||||||||||||
-db_connection|function|749c77682566e257
-large_resid|function|6535d3231f4d51bd
-collect_data|function|b8fb8d04ef5d4908
-daily_download_data|function|226ce3b4f0006240
-unnest_lm|function|0ea001e0c6e35fec
-plot_date_vs_counts|function|0553bb0ce8e38b96
-plot_lm_distance|function|522169f355dd5a4c
-linear_models_residuals|function|e7cff992efbaa8bd
-plot_large_rank_diff|function|bd5adbcd38d3ed75
-annual_download|function|4f61f548d109915f
-get_pkg_releases|function|9627e1d6ed28f85c
-saving_data|function|a3ae7c48e084dffc
-rlm_total_vs_unique_coeff|function|98044d599f9180f0
-large_rank_diff|function|9ed2c465b21c872a
-resid_plots|function|7c6fa7d3e0b2ab37
-pkg_releases|stem|6b554b85b8035925|544a7f054ee7b1e9|45dc084e90f18bb4|564524643||t19186.5278770303s|ab39a3683143cf83|206611|rds|local|vector|||2.302||
+rlinear_models_residuals|function|e7cff992efbaa8bd|||||||||||||||
+rlm_coeffs_data|stem|45021ec81de9eb6f|42f010a7b6a9304e|cd03e95b629fbb14|870042039||t19191.5019509494s|22b991cf0ec7a226|869|rds|local|vector|||0.009||
+rlm_coeffs_data_long|stem|d11f679c41e95ad4|d9d95c59c2aebded|51bdb7552f70db84|713913806||t19191.5019513987s|98594e1ece5d97aa|469|rds|local|vector|||0.028||
+rlm_models|stem|d3d22c8a5129693f|2cc8b4f8dbf87a8c|5339d1a32541f199|-1301421330||t19191.4973998992s|10190d9aa52bab89|4814776|rds|local|vector|||0.632|rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps. rlm failed to converge in 20 steps|
+rlm_models_res|stem|e0bad1e81c67819a|4eb7f00c44abb2fd|ff7f03ed5655db60|-1600804142||t19191.5019488518s|8289437957e4b99a|7335482|rds|local|vector|||0.167||
+rlm_models_res_2013|stem|e9ef094d756db1ae|4d4171068074dfeb|771fa572eae389d6|1629132974||t19191.5130593171s|cae1949747c50554|3196872|rds|local|vector|||0.051|rlm failed to converge in 20 steps|
+rlm_models_res_2014|stem|adf52710829221c1|fb28e28c1e812cf4|771fa572eae389d6|-1227865060||t19191.5130704583s|e31112f5087862d8|3450246|rds|local|vector|||0.04||
+rlm_models_res_2015|stem|57b81e84bd0f6b40|c80bc50dacaf5393|771fa572eae389d6|-1500437602||t19191.5130832945s|4987b2ae930b6004|3770665|rds|local|vector|||0.062|rlm failed to converge in 20 steps|
+rlm_models_res_2016|stem|5cfaec1d1a555c92|d29aa80246aa1306|771fa572eae389d6|-1698493438||t19191.5130966513s|1fd9f2582adb2b02|4100423|rds|local|vector|||0.07|rlm failed to converge in 20 steps|
+rlm_models_res_2017|stem|19c94145019af5c5|bbffa4e1aca85bd1|771fa572eae389d6|152922293||t19191.513111589s|fc76a78d8ddcfe7c|4651670|rds|local|vector|||0.09|rlm failed to converge in 20 steps|
+rlm_models_res_2018|stem|e1c29e94a0b7c5bf|558c6692109f95a6|771fa572eae389d6|-9939637||t19191.5131286665s|32821809871278c5|5199077|rds|local|vector|||0.117|rlm failed to converge in 20 steps|
+rlm_models_res_2019|stem|cd282c4ef7ad154c|c3867ed100c2dc8c|771fa572eae389d6|-1438405893||t19191.5131479191s|6601599665b16f8b|5775636|rds|local|vector|||0.124|rlm failed to converge in 20 steps|
+rlm_models_res_2020|stem|fa0d99e759d66d1d|aac06eb4c74ab649|771fa572eae389d6|-311971290||t19191.5130227825s|672edbba5fb7ce36|6395181|rds|local|vector|||0.173|rlm failed to converge in 20 steps|
+rlm_models_res_2021|stem|805aaf6d80f0afb3|8f65eff63a5dae53|771fa572eae389d6|-467034198||t19191.5130471365s|13251d83d53b32ac|7012167|rds|local|vector|||0.161|rlm failed to converge in 20 steps|
+rlm_total_vs_unique_coeff|function|98044d599f9180f0|||||||||||||||
+rlm_year_residuals|function|cac21ab14fbf0035|||||||||||||||
+saving_data|function|a3ae7c48e084dffc|||||||||||||||
+total_dfs|stem|5758c558cde46918|059c45e9356aa837|551194079ffac432|-738633380||t19179.5943567575s|cfb91d5ff9efe925|2277123|rds|local|vector|||1.319||
+unnest_lm|function|0ea001e0c6e35fec|||||||||||||||
