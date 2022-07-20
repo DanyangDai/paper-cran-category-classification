@@ -1,0 +1,97 @@
+---
+title: "R package downloads: what does it mean?"
+author:
+  # Dai Dai to add her own name here
+  - name: Danyang Dai
+  - name: Emi Tanaka
+    affiliation: Monash University
+    address:
+    - Monash University
+    - Clayton campus, VIC 3800, Australia
+    url: http://emitanaka.org/
+    orcid: 0000-0002-1455-259X
+    email:  emi.tanaka@monash.edu
+abstract: >
+    Abstract
+bibliography: paper.bib
+
+output: 
+  bookdown::html_document2:
+    theme: paper
+---
+
+```{r setup, cache = FALSE, include = FALSE}
+library(tidyverse)
+tocache <- TRUE
+knitr::opts_chunk$set(echo = FALSE, 
+                      cache = TRUE,
+                      cache.path = "cache/",
+                      fig.align = 'center', 
+                      fig.pos = 'htbp', 
+                      fig.width = 6,
+                      message = FALSE,
+                      warning = FALSE)
+
+theme_set(
+  theme(panel.background = element_rect(fill = NA),
+        panel.grid = element_line(color = "lightgray"),
+        axis.text = element_text(color = "black"),
+        axis.line = element_line(color = "black", size = 0.7),
+        axis.ticks.length = unit(1.4, "mm"),
+        axis.ticks = element_line(color = "black", size = 0.7),
+        axis.title = element_text(color = "black", face = "bold"),
+        strip.background = element_rect(color = "black",
+                                        fill = "black"),
+        strip.text = element_text(color = "white"),
+        plot.title.position = "plot",
+        plot.title = element_text(color = "black", hjust = 0)))
+```
+
+
+```{r load_packages}
+library(tidyverse)
+library(lubridate)
+library(rvest)
+library(glue)
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(feasts)
+library(cranlogs)
+library(stringr)
+library(bookdown)
+library(installr)
+library(data.table)
+library(scales)
+library(cranlogs)
+```
+
+
+```{r dataset, cache=TRUE}
+url <- "http://cran.rstudio.com/web/packages/packages.rds"
+db <- readRDS(url(url)) %>% 
+  as.data.frame()%>% 
+  mutate(Description = str_replace_all(Description, "\n", " "),
+         Description = str_squish(Description),
+         Title = str_replace_all(Title, "\n", " "))
+
+# getting the total R packages download numbers from 1998
+dd_start <- "2012-10-01"
+dd_end <- Sys.Date() - 1
+
+is_weekend <- function(date) {
+  weekdays(date) %in% c("Saturday", "Sunday")
+}
+
+total_downloads <- cran_downloads(from = dd_start, to = dd_end) %>% 
+  mutate(year = year(date),
+         day = yday(date),
+         weekend = is_weekend(date)) %>% 
+  filter(row_number() <= n()-1)
+
+n_pkgs <-nrow(db)
+author<-distinct(db,Author,.keep_all= TRUE)
+
+rstudio<- str_detect(author$Author, "RStudio") %>% 
+  sum(na.rm = TRUE)
+```
