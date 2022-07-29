@@ -95,3 +95,21 @@ author<-distinct(db,Author,.keep_all= TRUE)
 rstudio<- str_detect(author$Author, "RStudio") %>% 
   sum(na.rm = TRUE)
 ```
+
+
+# Introduction 
+
+The research field has become increasingly digital. The research outputs have gone beyond books and papers but involves more digital products such as data, websites, recordings and more importantly software that is designed for the purpose of advancing research. @smith2016software propose principles to correctly cite research software. By citing the research software, @smith2016software aim to recognise the contribution to science that research software developer made. Books and journal articles have long benefited from references and cations which have been used as a benchmark for academic achievements.  It is important to recognise the contribution that these R package developers made to the scientific and academic communities. [@anzt2020environment] state that research software, like most of the R packages, is lack of impact measures and suitable incentive systems.The growing field of R packages development has made great contribution to different area of research.
+
+"R packages are the result of scholarly activity and as such constitute scholarly resources which must be clearly identifiable for the respective scientific communities." said by @hornik2012did.
+In order to accurately measure the contribution of research software there need to be a matrix that account for quality of the research software and the   
+
+
+
+```{r totalvsunique}
+
+
+```
+
+
+# 
