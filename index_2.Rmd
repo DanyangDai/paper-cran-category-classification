@@ -64,6 +64,7 @@ library(installr)
 library(data.table)
 library(scales)
 library(cranlogs)
+library(targets)
 ```
 
 
@@ -107,9 +108,22 @@ In order to accurately measure the contribution of research software there need 
 
 
 ```{r totalvsunique}
+daily_download <- tar_load(daily_download)
 
+daily_download <- daily_download %>% 
+  mutate(date = ymd(file_date),
+         total = as.numeric(download),
+         unique = as.numeric(unique),
+         diff_total_unique = as.numeric(difference)) %>% 
+  select(date, total, unique, diff_total_unique)
+
+daily_download %>% 
+  ggplot(aes(x =date)) + 
+  geom_abline()
 
 ```
+
+
 
 
 # 
