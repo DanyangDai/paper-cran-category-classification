@@ -11,7 +11,7 @@
 <meta name="author" content="Hien Nguyen">
 <meta name="author" content="Emi Tanaka">
 
-<title>Exposition to evaluate quality of R packages</title>
+<title>Exposition to evaluate quality of R packages / R package downloads: what does it mean?</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -69,7 +69,7 @@ div.csl-indent {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Exposition to evaluate quality of R packages</h1>
+<h1 class="title">Exposition to evaluate quality of R packages / R package downloads: what does it mean?</h1>
 </div>
 
 
@@ -131,6 +131,14 @@ div.csl-indent {
 </div>
 <section id="introduction" class="level1">
 <h1>Introduction</h1>
+<ul>
+<li>Current state of R, how big its growing in terms of developer and user community.</li>
+<li>With sea of packages, quality assurances needed.</li>
+<li>Academics are starting to recognise software packages as research output but what is constituted as quality contribution is unclear / not defined</li>
+<li>Make use of external metrics, e.g.&nbsp;downloads and other metadata (github, documentation, tests) as way of assessing this quality –&gt; check what ROpenSci has</li>
+<li>Consider ranking of packages with respect to downloads within relevant domains, rather than raw downloads</li>
+<li>Download count can be surrogate of popularity but it can be manipulated (examples of how updates, our own experiments that show this). Alternative metrics, like mentions in stackoverflow, github stars, tests.</li>
+</ul>
 <p>Today R is greatly enhanced by its thriving community that include dedicated group of core developers, over 16.1K authors that contributed directly or indirectly to the development of R-packages, and millions of users worldwide. There are now over 18.8K R-packages and if the past trend is any indicator of future develoments, we would continue to see a rising number of contributed R packages.</p>
 <p>There is a growing recognition of software packages as a valuable output by academic institutions and companies.</p>
 <p>“R packages are the result of scholarly activity and as such constitute scholarly resources which must be clearly identifiable for the respective scientific communities.” said by <span class="citation" data-cites="hornik2012did">Hornik, Murdoch, and Zeileis (<a href="#ref-hornik2012did" role="doc-biblioref">2012</a>)</span>. The R community has grown in the past two decades. Since R was first introduced in the August of 1993 with its first official release in the June of 1995 <span class="citation" data-cites="ihaka:1996">(<a href="#ref-ihaka:1996" role="doc-biblioref">Ihaka and Gentleman 1996</a>)</span>, there was only a small group of core developers. In April of 1997, the Comprehensive R Archive Network (CRAN) was established as the official R-packages repository, with 3 mirror sites <span class="citation" data-cites="firstcran">(<a href="#ref-firstcran" role="doc-biblioref">Hornik 1997</a>)</span>. After years of continues thrive of R packages developments, today R is greatly enhanced by over 18.8K R-packages contributed by 16.1K of developers all over the world. Among all the available R packages, RStudio has the copyright to 232 R packages. Majority of the R packages are developed and owned by individual author who has been contributing and sharing their knowledge with the public. It is important to recognise the contribution that these R package developers made to the scientific and academic communities. One aspect of the quality metrics for R package is number of downloads. <span class="citation" data-cites="rhub">Li (<a href="#ref-rhub" role="doc-biblioref">2020</a>)</span> suggests that download counts are a popular way that indicates a package’s importance and quality. In general, the more downloads, the more important and popular the package gets. There are a few different source repositories to install and download R-packages which includes Bioconductor, Gitlab, GitHub, R-Forge and 106 CRAN mirrors in 49 regions. Of all the CRAN mirrors, the daily download counts for each package is only readily available from the RStudio CRAN mirror. This is also the default CRAN mirror if not deliberately chosen a CRAN mirror in RStudio <span class="citation" data-cites="rstudiocran">(<a href="#ref-rstudiocran" role="doc-biblioref">Wickham 2013</a>)</span>. The RStudio CRAN mirror is likely to have the most users as the default mirror for R users. From the cranlogs package, the number of downloads for each package is easily assessable.</p>

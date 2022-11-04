@@ -1,5 +1,5 @@
 ---
-title: "Exposition to evaluate quality of R packages"
+title: "Exposition to evaluate quality of R packages / R package downloads: what does it mean?"
 author:
   - name: Danyang Dai
     affiliation: Monash University
@@ -95,6 +95,14 @@ rstudio<- str_detect(author$Author, "RStudio") %>%
 
 
 # Introduction
+
+* Current state of R, how big its growing in terms of developer and user community.
+* With sea of packages, quality assurances needed. 
+* Academics are starting to recognise software packages as research output but what is constituted as quality contribution is unclear / not defined
+* Make use of external metrics, e.g. downloads and other metadata (github, documentation, tests) as way of assessing this quality --> check what ROpenSci has
+* Consider ranking of packages with respect to downloads within relevant domains, rather than raw downloads
+* Download count can be surrogate of popularity but it can be manipulated (examples of how updates, our own experiments that show this). Alternative metrics, like mentions in stackoverflow, github stars, tests.
+
 
 Today R is greatly enhanced by its thriving community that include dedicated group of core developers, over `r scales::label_number_si(accuracy=0.1)(nrow(distinct(db,Author,.keep_all= TRUE)))` authors that contributed directly or indirectly to the development of R-packages, and millions of users worldwide. There are now over `r scales::label_number_si(accuracy=0.1)(nrow(db))` R-packages and if the past trend is any indicator of future develoments, we would continue to see a rising number of contributed R packages. 
 
