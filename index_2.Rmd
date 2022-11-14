@@ -124,6 +124,23 @@ daily_download %>%
 ```
 
 
+# Trend of duplicated downloads
+
+With the increase in computation power, machines are capable of running heave tasks. This allows for faster package downloads. To investigate the relationship between the number of package downloads and the actual R package users, a robust liner regression is performance for each year. 
+$ totaldownloads = \beta_0 + \beta_1 uniquedownloads + \varepsilon $
+
+Figure below shows the $\hat\beta_1$ estimated for each year. There is a clear upwards trend of $\hat\beta_1$. When $\hat\beta_1$ is close to 1, it suggests that one downloads represent one
 
 
-# 
+```{r}
+tar_read(coeff_plot_year)
+```
+
+
+
+# Age of the package 
+
+
+To understand the relationship between the age of the package and user volume, Generalised linear model is performed.    
+
+

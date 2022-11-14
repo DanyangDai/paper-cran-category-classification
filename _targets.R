@@ -9,7 +9,7 @@ library(targets)
 
 # Set target options:
 tar_option_set(
-  packages = c("tidyverse", "lubridate", "cranlogs", "DBI", "rvest", "pkgsearch","purrr","broom"), # packages that your targets need to run
+  packages = c("tidyverse", "lubridate", "cranlogs", "DBI", "rvest", "pkgsearch","purrr","broom","plotly"), # packages that your targets need to run
   format = "rds" # default storage format
   # Set other options as needed.
 )
@@ -45,10 +45,34 @@ list(
   
   # getting total annual data 
   tar_target(total_dfs, annual_download(2013:2021)),
-  
+  tar_target(total_year, readRDS("data/target/total_year.rds")),
   # IDA -- checks
   
   tar_target(plot_daily_download, plot_date_vs_counts(daily_download)),
+  
+  # ranking percentage check
+  
+  tar_target(yearly_pct_unique_total_violin_plot, total_year %>% 
+                ggplot(aes(y = precentage, x = year)) +
+                geom_violin() + 
+                geom_boxplot(width = 0.1)),
+  
+  tar_target(yearly_ranked_total_top10_pkg_plotly, total_year %>% 
+               filter(rank_unique <= 10) %>% 
+               ggplot(aes(y = precentage, x = year, color = year, text = package)) + 
+               geom_point()), 
+  
+  tar_target(pkgs_big_rank_diff, large_rank_diff(total_dfs = total_dfs, benchmark_rank = 0, top_rank = 30)),
+  
+  tar_target(big_rank_diff_plot,total_year %>% 
+               filter(package %in% pkgs_big_rank_diff) %>% 
+               ggplot(aes(x=year))+
+               geom_line(aes(y = rank_unique, group = package), color = "red") +
+               geom_line(aes(y = rank_total, group = package), color = "black") + 
+               facet_wrap(~package, scale = "free")),
+  
+  
+  
   
   # Robust linear regression analysis of total vs unique counts
   

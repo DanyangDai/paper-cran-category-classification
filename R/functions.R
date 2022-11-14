@@ -123,7 +123,7 @@ large_resid <- function(redis_data, positive, negative){
 }
 
 large_rank_diff <- function(total_dfs,benchmark_rank, top_rank){
-     total_dfs %>% 
+    total_dfs %>% 
     filter(rank_diff > benchmark_rank) %>% 
     filter(rank_total < top_rank) %>% 
     group_by(package) %>% 
